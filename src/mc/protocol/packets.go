@@ -677,24 +677,6 @@ const (
 
 type MouseButton int8
 
-func (d *MouseButton) Name() string {
-	switch *d {
-	case LeftMouseButton:
-		return "Left Mouse Button"
-	case RightMouseButton:
-		return "Left Mouse Button"
-	case ShiftButton:
-		return "Shift Button"
-	case MiddleMouseButton:
-		return "Middle Mouse Button"
-	}
-	return "Unknown"
-}
-
-func (d *MouseButton) String() string {
-	return fmt.Sprintf("<MouseButton: %s; 0x%x>", d.Name(), *d)
-}
-
 const (
 	LeftMouseButton MouseButton = iota
 	RightMouseButton
@@ -703,23 +685,6 @@ const (
 )
 
 type GameDifficulty uint8
-
-func (d *GameDifficulty) Name() string {
-	switch *d {
-	case PeacefulDifficulty:
-		return "Peaceful"
-	case EasyDifficulty:
-		return "Easy"
-	case NormalDifficulty:
-		return "Normal"
-	case HardDifficulty:
-		return "Hard"
-	}
-	return "Unknown"
-}
-func (d *GameDifficulty) String() string {
-	return fmt.Sprintf("<GameDifficulty: %s; 0x%x>", d.Name(), *d)
-}
 
 const (
 	PeacefulDifficulty GameDifficulty = iota
