@@ -1,9 +1,5 @@
 package protocol
 
-import (
-	"fmt"
-)
-
 // protocol version supported
 const Version = 49
 
