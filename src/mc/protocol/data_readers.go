@@ -24,9 +24,21 @@ func init() {
 	// there are more packets that use (len int16, []byte), so this is default
 	// method of parsing unless custom parsers are available for each
 	DefaultDataReaders.Add([]byte{}, ProtocolReadByteSlice)
+    DefaultDataReaders.Add([]Slot{}, ProtocolReadSlotSlice)
 }
 
 //////////////////////////////////////////////////////////
+
+func ProtocolReadSlotSlice(r *Reader) (v interface{}, err error) {
+    var size uint16
+    err = r.ReadValue(&size)
+    if err != nil {
+        return
+    }
+    v = make([]Slot, size)
+    err = r.ReadSlice(&v)
+    return
+}
 
 func ProtocolReadByteSlice(r *Reader) (v interface{}, err error) {
 	var size uint16
@@ -34,9 +46,8 @@ func ProtocolReadByteSlice(r *Reader) (v interface{}, err error) {
 	if err != nil {
 		return
 	}
-	result := make([]byte, size)
-	err = r.ReadSlice(&result)
-	v = result
+	v = make([]byte, size)
+	err = r.ReadSlice(&v)
 	return
 }
 
@@ -65,7 +76,6 @@ func ProtocolReadString(r *Reader) (v interface{}, err error) {
 
 		raw = append(raw, ch)
 	}
-	fmt.Printf("String Raw: %#v\n", raw)
 
 	v = string(utf16.Decode(raw))
 	fmt.Printf("String Decoded: %#v\n", v)
