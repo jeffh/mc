@@ -5,6 +5,17 @@ import (
 	"testing"
 )
 
+func TestSlotIsEmptyIfIDIsNegOne(t *testing.T) {
+	s := Slot{ID: -1}
+	Expect(t, s.IsEmpty(), ToBeTrue)
+
+	s = EmptySlot
+	Expect(t, s.IsEmpty(), ToBeTrue)
+
+	s = Slot{ID: 1}
+	Expect(t, s.IsEmpty(), Not(ToBeTrue))
+}
+
 func TestGameModeSurvival(t *testing.T) {
 	gm := SurvivalMode
 	Expect(t, gm.IsSurvival(), ToBeTrue)

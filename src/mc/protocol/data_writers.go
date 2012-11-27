@@ -22,9 +22,65 @@ func init() {
 	DefaultDataWriters.Add("", ProtocolWriteString) // strings
 	DefaultDataWriters.Add(true, ProtocolWriteBool) // bool
 	DefaultDataWriters.Add([]byte{}, ProtocolWriteByteSlice)
+
+	DefaultDataWriters.Add([]Slot{}, ProtocolWriteSlotSlice)
+	DefaultDataWriters.Add(Slot{}, ProtocolWriteSlot)
 }
 
 /////////////////////////////////////////////////////////////////
+
+func ProtocolWriteSlot(w *Writer, v interface{}) error {
+	slot := v.(Slot)
+
+	err := w.WriteValue(slot.ID)
+	if err != nil {
+		return err
+	}
+
+	// empty slots don't write anything else
+	if slot.IsEmpty() {
+		return nil
+	}
+
+	err = w.WriteValue(slot.Count)
+	if err != nil {
+		return err
+	}
+
+	err = w.WriteValue(slot.Damage)
+	if err != nil {
+		return err
+	}
+
+	if len(slot.CompressedNBT) == 0 {
+		return w.WriteValue(int16(-1))
+	}
+
+	err = w.WriteValue(int16(len(slot.CompressedNBT)))
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ProtocolWriteSlotSlice(w *Writer, v interface{}) error {
+	slots := v.([]Slot)
+	size := int16(len(slots))
+	fmt.Printf("Writing Slot Slice of size: %v\n", size)
+	err := w.WriteValue(size)
+	if err != nil {
+		return err
+	}
+
+	for _, s := range slots {
+		err = w.WriteDispatch(s)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
 
 func ProtocolWriteBool(w *Writer, v interface{}) error {
 	var value byte

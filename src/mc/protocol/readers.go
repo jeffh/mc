@@ -50,10 +50,10 @@ func (r *Reader) UpgradeReader(f ReaderFactory) {
 // The value given should be a pointer
 func (r *Reader) ReadValue(v interface{}) error {
 	err := binary.Read(r.stream, binary.BigEndian, v)
-    // for debugging
+	// for debugging
 	value := reflect.ValueOf(v).Elem()
 	fmt.Printf("ReadValue: 0x%x\n", value.Interface())
-    // - end
+	// - end
 	if err != nil {
 		fmt.Printf("Error when reading: %s\n", err)
 	}
@@ -67,8 +67,8 @@ func (r *Reader) ReadValue(v interface{}) error {
 //
 // The value given should be a pointer that is writable
 func (r *Reader) ReadDispatch(value interface{}) error {
-    v := reflect.ValueOf(value)
-    derefV := v.Elem()
+	v := reflect.ValueOf(value)
+	derefV := v.Elem()
 	reader, ok := r.readers[derefV.Type()]
 	if ok {
 		val, err := reader(r)
@@ -79,9 +79,9 @@ func (r *Reader) ReadDispatch(value interface{}) error {
 		return err
 	}
 
-    if derefV.Kind() == reflect.Struct {
-        return r.ReadStruct(value)
-    }
+	if derefV.Kind() == reflect.Struct {
+		return r.ReadStruct(value)
+	}
 
 	return r.ReadValue(value)
 }
@@ -95,7 +95,7 @@ func (r *Reader) ReadDispatch(value interface{}) error {
 // eg - make([]byte, 5) will read 5 bytes
 func (r *Reader) ReadSlice(s interface{}) error {
 	value := reflect.ValueOf(s)
-    derefValue := reflect.ValueOf(value.Elem().Interface())
+	derefValue := reflect.ValueOf(value.Elem().Interface())
 	size := derefValue.Len()
 	for i := 0; i < size; i++ {
 		typ := derefValue.Index(i).Type()
@@ -115,18 +115,18 @@ func (r *Reader) ReadSlice(s interface{}) error {
 // The value provided should be a pointer to a struct.
 func (r *Reader) ReadStruct(v interface{}) (err error) {
 	value := reflect.ValueOf(v).Elem()
-    if value.Kind() != reflect.Struct { 
-        panic(fmt.Errorf("Expected pointer to a struct, got: %#v", v))
-    }
+	if value.Kind() != reflect.Struct {
+		panic(fmt.Errorf("Expected pointer to a struct, got: %#v", v))
+	}
 	size := value.NumField()
 	for i := 0; i < size; i++ {
 		field := value.Field(i)
-        val := reflect.New(field.Type())
+		val := reflect.New(field.Type())
 		err = r.ReadDispatch(val.Interface())
 		if err != nil {
 			return
 		}
-        field.Set(val.Elem())
+		field.Set(val.Elem())
 	}
 	return
 }

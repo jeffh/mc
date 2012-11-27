@@ -60,16 +60,16 @@ func (w *Writer) WriteValue(v interface{}) error {
 // The value given can be anything that is supported by writers
 // table, a struct, or fixed-size go type.
 func (w *Writer) WriteDispatch(value interface{}) error {
-    v := reflect.ValueOf(value)
+	v := reflect.ValueOf(value)
 	writer, ok := w.writers[v.Type()]
 	if ok {
 		err := writer(w, v.Interface())
 		return err
 	}
 
-    if v.Kind() == reflect.Struct {
-        w.WriteStruct(value)
-    }
+	if v.Kind() == reflect.Struct {
+		w.WriteStruct(value)
+	}
 
 	return w.WriteValue(v.Interface())
 }

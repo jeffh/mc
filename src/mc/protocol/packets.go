@@ -505,10 +505,16 @@ type ChunkBulkMetadata struct {
 
 // represents an item
 type Slot struct {
-	ID     int16
-	Count  int8
-	Damage int16
-	Data   []byte
+	ID            int16
+	Count         int8
+	Damage        int16
+	CompressedNBT []byte
+}
+
+var EmptySlot = Slot{ID: -1}
+
+func (s *Slot) IsEmpty() bool {
+	return s.ID == -1
 }
 
 // requires special parsing

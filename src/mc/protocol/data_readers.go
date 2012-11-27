@@ -24,20 +24,21 @@ func init() {
 	// there are more packets that use (len int16, []byte), so this is default
 	// method of parsing unless custom parsers are available for each
 	DefaultDataReaders.Add([]byte{}, ProtocolReadByteSlice)
-    DefaultDataReaders.Add([]Slot{}, ProtocolReadSlotSlice)
+	DefaultDataReaders.Add([]Slot{}, ProtocolReadSlotSlice)
+	DefaultDataReaders.Add(Slot{}, ProtocolReadSlot)
 }
 
 //////////////////////////////////////////////////////////
 
 func ProtocolReadSlotSlice(r *Reader) (v interface{}, err error) {
-    var size uint16
-    err = r.ReadValue(&size)
-    if err != nil {
-        return
-    }
-    v = make([]Slot, size)
-    err = r.ReadSlice(&v)
-    return
+	var size uint16
+	err = r.ReadValue(&size)
+	if err != nil {
+		return
+	}
+	v = make([]Slot, size)
+	err = r.ReadSlice(&v)
+	return
 }
 
 func ProtocolReadByteSlice(r *Reader) (v interface{}, err error) {
@@ -110,13 +111,14 @@ func ProtocolReadSlot(r *Reader) (v interface{}, err error) {
 		return
 	}
 
-	s.Data = make([]byte, 0)
+	s.CompressedNBT = make([]byte, 0)
 	for i := int16(0); i < size; i++ {
 		var value byte
 		err = r.ReadValue(&value)
 		if err != nil {
 			return
 		}
+		s.CompressedNBT = append(s.CompressedNBT, value)
 		// currently, just toss it all
 		// the data is gzipped-NBT format
 	}

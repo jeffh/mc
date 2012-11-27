@@ -15,7 +15,6 @@ func TestProtocolStringReader(t *testing.T) {
 	Expect(t, v, ToEqual, "hello world")
 }
 
-/*
 func TestProtocolSlotSliceReader(t *testing.T) {
 	r, b := createProtocolReader()
 	// last two int8s are just arbitrary binary bits for now
@@ -27,15 +26,14 @@ func TestProtocolSlotSliceReader(t *testing.T) {
 	Expect(t, err, ToBeNil)
 	slots, ok := v.([]Slot)
 	Expect(t, ok, ToBeTrue)
-    Expect(t, slots, ToBeLengthOf, 1)
-    slot := slots[0]
+	Expect(t, slots, ToBeLengthOf, 1)
+	slot := slots[0]
 	Expect(t, slot.ID, ToEqual, int16(2))
 	Expect(t, slot.Count, ToEqual, int8(100))
 	Expect(t, slot.Damage, ToEqual, int16(99))
-	Expect(t, slot.Data, ToBeLengthOf, 0)
+	Expect(t, slot.CompressedNBT, ToBeLengthOf, 2)
 	Expect(t, b.Len(), ToEqual, 0)
 }
-*/
 
 func TestProtocolSlotReader(t *testing.T) {
 	r, b := createProtocolReader()
@@ -51,11 +49,11 @@ func TestProtocolSlotReader(t *testing.T) {
 	Expect(t, slot.ID, ToEqual, int16(2))
 	Expect(t, slot.Count, ToEqual, int8(100))
 	Expect(t, slot.Damage, ToEqual, int16(99))
-	Expect(t, slot.Data, ToBeLengthOf, 0)
+	Expect(t, slot.CompressedNBT, ToBeLengthOf, 2)
 	Expect(t, b.Len(), ToEqual, 0)
 }
 
-func TestProtocolSlotReaderForNegativeID(t *testing.T) {
+func TestProtocolSlotReaderForEmptySlot(t *testing.T) {
 	r, b := createProtocolReader()
 	err := writeBytes(b, int16(-1))
 	Expect(t, err, ToBeNil)
@@ -68,7 +66,7 @@ func TestProtocolSlotReaderForNegativeID(t *testing.T) {
 	Expect(t, b.Len(), ToEqual, 0)
 }
 
-func TestProtocolSlotReaderForNegativeDataSize(t *testing.T) {
+func TestProtocolSlotReaderForEmptyCompressedNBT(t *testing.T) {
 	r, b := createProtocolReader()
 	err := writeBytes(b, int16(2), int8(100), int16(99), int16(-1))
 	Expect(t, err, ToBeNil)
@@ -80,7 +78,7 @@ func TestProtocolSlotReaderForNegativeDataSize(t *testing.T) {
 	Expect(t, slot.ID, ToEqual, int16(2))
 	Expect(t, slot.Count, ToEqual, int8(100))
 	Expect(t, slot.Damage, ToEqual, int16(99))
-	Expect(t, slot.Data, ToBeLengthOf, 0)
+	Expect(t, slot.CompressedNBT, ToBeLengthOf, 0)
 	Expect(t, b.Len(), ToEqual, 0)
 }
 
