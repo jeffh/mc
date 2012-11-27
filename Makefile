@@ -1,4 +1,4 @@
-PACKAGES=mc mc/protocol
+PACKAGES=mc mc/protocol nbt
 OUTFILE=mc
 MAINFILE=src/main.go
 
