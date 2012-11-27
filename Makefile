@@ -4,7 +4,7 @@ MAINFILE=src/main.go
 
 VARS=GOPATH=`pwd`
 
-both: format test build
+all: format test build
 
 format:
 	$(VARS) go fmt $(PACKAGES)
