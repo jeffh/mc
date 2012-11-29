@@ -139,7 +139,7 @@ func (r *reader) consumeTagCompound(includesName bool) (Tag, error) {
 
     compound := make(Compound)
     for {
-        tag, err := r.Next()
+        tag, err := r.next(true)
         if err != nil { return InvalidTag, err }
         if tag.Type == TagTypeEnd { break }
 
@@ -233,7 +233,7 @@ func (r *reader) next(includesName bool) (Tag, error) {
     return r.nextType(typ, includesName)
 }
 
-func (r *reader) Next() (Tag, error) {
+func (r *reader) Read() (Tag, error) {
     return r.next(true)
 }
 

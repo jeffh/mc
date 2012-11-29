@@ -49,7 +49,7 @@ func (f *File) Read() (Tag, error) {
         return InvalidTag, errors.New("No Reader specified")
     }
     r := &reader{f.reader, f.ByteOrder}
-    return r.Next()
+    return r.Read()
 }
 
 // Parses the NBT format into a struct. This behaves similarly to
