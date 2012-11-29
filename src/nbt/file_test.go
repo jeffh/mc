@@ -30,6 +30,23 @@ func TestReadingWithNoReaderIsAnError(t *testing.T) {
     Expect(t, err.Error(), ToEqual, "No Reader specified")
 }
 
+func TestReadingSimpleNBTAsStruct(t *testing.T) {
+    r := fixtureAsReader("fixtures/test.nbt")
+    reader, err := gzip.NewReader(r)
+    Expect(t, err, ToBeNil)
+
+    var value struct {
+        Name Name
+        TheName string `nbt:"name"`
+    }
+
+    nbt := NewFile(reader)
+    err = nbt.ReadInto(&value)
+    Expect(t, err, ToBeNil)
+    Expect(t, value.Name, ToEqual, Name("hello world"))
+    Expect(t, value.TheName, ToEqual, "Bananrama")
+}
+
 func TestReadingSimpleNBT(t *testing.T) {
     r := fixtureAsReader("fixtures/test.nbt")
     reader, err := gzip.NewReader(r)
@@ -49,12 +66,126 @@ func TestReadingSimpleNBT(t *testing.T) {
     })
 }
 
+type itemData struct {
+    Name string `nbt:"name"`
+    Value float32 `nbt:"value"`
+}
+type compoundItem struct {
+    CreatedOn int64 `nbt:"created-on"`
+    Name string `nbt:"name"`
+}
+
+func TestReadIntoFullNBT(t *testing.T) {
+    r := fixtureAsReader("fixtures/bigtest.nbt")
+    reader, err := gzip.NewReader(r)
+    Expect(t, err, ToBeNil)
+
+    var data struct {
+        Name Name
+        IntTest int32 `nbt:"intTest"`
+        ByteTest byte `nbt:"byteTest"`
+        StringTest string `nbt:"stringTest"`
+        DoubleTest float64 `nbt:"doubleTest"`
+        FloatTest float32 `nbt:"floatTest"`
+        LongTest int64 `nbt:"longTest"`
+        ShortTest int16 `nbt:"shortTest"`
+        ByteArrayTest []byte `nbt:"byteArrayTest (the first 1000 values of (n*n*255+n*7)%100, starting with n=0 (0, 62, 34, 16, 8, ...))"`
+        LongList []int64 `nbt:"listTest (long)"`
+        CompoundTest struct {
+            Egg itemData `nbt:"egg"`
+            Ham itemData `nbt:"ham"`
+        } `nbt:"nested compound test"`
+        ListCompound []compoundItem `nbt:"listTest (compound)"`
+    }
+
+    expectedListCompound := []compoundItem {
+        { int64(1264099775885), "Compound tag #0" },
+        { int64(1264099775885), "Compound tag #1" },
+    }
+
+    expectedBytes := []byte{}
+    for i := 0; i<1000; i++ {
+        expectedBytes = append(expectedBytes, byte((i*i*255+i*7) % 100))
+    }
+
+    nbt := NewFile(reader)
+    err = nbt.ReadInto(&data)
+    Expect(t, err, ToBeNil)
+    Expect(t, data.Name, ToEqual, Name("Level"))
+    Expect(t, data.IntTest, ToEqual, int32(2147483647))
+    Expect(t, data.ByteTest, ToEqual, byte(127))
+    Expect(t, data.StringTest, ToEqual, "HELLO WORLD THIS IS A TEST STRING \xc3\x85\xc3\x84\xc3\x96!")
+    Expect(t, data.DoubleTest, ToEqual, float64(0.49312871321823148))
+    Expect(t, data.FloatTest, ToEqual, float32(0.49823147058486938))
+    Expect(t, data.LongTest, ToEqual, int64(9223372036854775807))
+    Expect(t, data.ShortTest, ToEqual, int16(32767))
+    Expect(t, data.ByteArrayTest, ToDeeplyEqual, expectedBytes)
+    Expect(t, data.LongList, ToDeeplyEqual, []int64{11, 12, 13, 14, 15})
+    Expect(t, data.CompoundTest.Egg, ToDeeplyEqual, itemData { "Eggbert", 0.5 })
+    Expect(t, data.CompoundTest.Ham, ToDeeplyEqual, itemData { "Hampus", 0.75 })
+    Expect(t, data.ListCompound, ToDeeplyEqual, expectedListCompound)
+}
+
 func TestReadingFullNBT(t *testing.T){
     r := fixtureAsReader("fixtures/bigtest.nbt")
     reader, err := gzip.NewReader(r)
     Expect(t, err, ToBeNil)
 
     nbt := NewFile(reader)
-    _, err = nbt.Read()
+    tag, err := nbt.Read()
     Expect(t, err, ToBeNil)
+
+    byteArrayTest := "byteArrayTest (the first 1000 values of (n*n*255+n*7)%100, starting with n=0 (0, 62, 34, 16, 8, ...))"
+    expectedBytes := []byte{}
+    for i := 0; i<1000; i++ {
+        expectedBytes = append(expectedBytes, byte((i*i*255+i*7) % 100))
+    }
+    expectedTag := Tag{
+        Name: "Level",
+        Type: TagTypeCompound,
+        Value: Compound{
+            "nested compound test": { "nested compound test", TagTypeCompound, Compound {
+                "egg": { "egg", TagTypeCompound, Compound {
+                    "name": { "name", TagTypeString, "Eggbert" },
+                    "value": { "value", TagTypeFloat, float32(0.5) },
+                }},
+                "ham": { "ham", TagTypeCompound, Compound{
+                    "name": { "name", TagTypeString, "Hampus" },
+                    "value": { "value", TagTypeFloat, float32(0.75) },
+                }},
+            }},
+            "intTest": { "intTest", TagTypeInt, int32(2147483647) },
+            "byteTest": { "byteTest", TagTypeByte, byte(127) },
+            "stringTest": { "stringTest", TagTypeString, "HELLO WORLD THIS IS A TEST STRING \xc3\x85\xc3\x84\xc3\x96!" },
+            "listTest (long)": { "listTest (long)", TagTypeList, List {
+                TagTypeLong,
+                []interface{} {
+                    int64(11),
+                    int64(12),
+                    int64(13),
+                    int64(14),
+                    int64(15),
+                },
+            }},
+            "doubleTest": { "doubleTest", TagTypeDouble, float64(0.49312871321823148) },
+            "floatTest": { "floatTest", TagTypeFloat, float32(0.49823147058486938) },
+            "longTest": { "longTest", TagTypeLong, int64(9223372036854775807) },
+            "listTest (compound)": { "listTest (compound)", TagTypeList, List {
+                TagTypeCompound,
+                []interface{} {
+                    Compound {
+                        "created-on": { "created-on", TagTypeLong, int64(1264099775885) },
+                        "name": { "name", TagTypeString, "Compound tag #0" },
+                    },
+                    Compound {
+                        "created-on": { "created-on", TagTypeLong, int64(1264099775885) },
+                        "name": { "name", TagTypeString, "Compound tag #1" },
+                    },
+                },
+            }},
+            byteArrayTest: { byteArrayTest, TagTypeByteArray, expectedBytes },
+            "shortTest": { "shortTest", TagTypeShort, int16(32767) },
+        },
+    }
+    Expect(t, tag, ToDeeplyEqual, expectedTag)
 }

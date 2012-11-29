@@ -1,5 +1,7 @@
 package nbt
 
+import "reflect"
+
 type TagType byte
 
 const (
@@ -30,10 +32,18 @@ var InvalidTag = Tag{Type: TagTypeInvalid}
 //type Short int16
 //type Int int32
 //type Long int64
-////type Float float32
+//type Float float32
 //type Double float64
 //type ByteArray []byte
 //type String string
-type List []Tag
+type List struct {
+    Type TagType
+    Values []interface{}
+}
 type Compound map[string]Tag
 type IntArray []int32
+
+// used to mark tag names
+type Name string
+
+var nameType = reflect.TypeOf(Name(""))
