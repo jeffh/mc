@@ -46,7 +46,7 @@ func ToBeTrue(actual interface{}) (string, bool) {
 
 func ToBeNil(actual interface{}) (string, bool) {
 	value := reflect.ValueOf(actual)
-	if !value.IsNil() {
+	if value.Kind() != reflect.Ptr || !value.IsNil() {
 		return "to be nil", false
 	}
 	return "", true
