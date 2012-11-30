@@ -9,7 +9,7 @@ import (
 
 func createProtocolReader() (*Reader, *bytes.Buffer) {
 	b := bytes.NewBuffer([]byte{})
-	r := NewReader(b, nil, ClientPacketMapper)
+	r := NewReader(b, ClientPacketMapper, nil, nil)
 	return r, b
 }
 

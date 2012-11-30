@@ -31,7 +31,7 @@ func TestProtocolSlotSliceReader(t *testing.T) {
 	Expect(t, slot.ID, ToEqual, int16(2))
 	Expect(t, slot.Count, ToEqual, int8(100))
 	Expect(t, slot.Damage, ToEqual, int16(99))
-	Expect(t, slot.CompressedNBT, ToBeLengthOf, 2)
+	Expect(t, slot.GzippedNBT, ToBeLengthOf, 2)
 	Expect(t, b.Len(), ToEqual, 0)
 }
 
@@ -49,7 +49,7 @@ func TestProtocolSlotReader(t *testing.T) {
 	Expect(t, slot.ID, ToEqual, int16(2))
 	Expect(t, slot.Count, ToEqual, int8(100))
 	Expect(t, slot.Damage, ToEqual, int16(99))
-	Expect(t, slot.CompressedNBT, ToBeLengthOf, 2)
+	Expect(t, slot.GzippedNBT, ToBeLengthOf, 2)
 	Expect(t, b.Len(), ToEqual, 0)
 }
 
@@ -66,7 +66,7 @@ func TestProtocolSlotReaderForEmptySlot(t *testing.T) {
 	Expect(t, b.Len(), ToEqual, 0)
 }
 
-func TestProtocolSlotReaderForEmptyCompressedNBT(t *testing.T) {
+func TestProtocolSlotReaderForEmptyGzippedNBT(t *testing.T) {
 	r, b := createProtocolReader()
 	err := writeBytes(b, int16(2), int8(100), int16(99), int16(-1))
 	Expect(t, err, ToBeNil)
@@ -78,7 +78,7 @@ func TestProtocolSlotReaderForEmptyCompressedNBT(t *testing.T) {
 	Expect(t, slot.ID, ToEqual, int16(2))
 	Expect(t, slot.Count, ToEqual, int8(100))
 	Expect(t, slot.Damage, ToEqual, int16(99))
-	Expect(t, slot.CompressedNBT, ToBeLengthOf, 0)
+	Expect(t, slot.GzippedNBT, ToBeLengthOf, 0)
 	Expect(t, b.Len(), ToEqual, 0)
 }
 

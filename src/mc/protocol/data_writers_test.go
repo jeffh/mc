@@ -8,10 +8,10 @@ import (
 func TestProtocolSlotSliceWriter(t *testing.T) {
 	w, b := createProtocolWriter()
 	slot := Slot{
-		ID:            1,
-		Count:         5,
-		Damage:        10,
-		CompressedNBT: []byte{},
+		ID:         1,
+		Count:      5,
+		Damage:     10,
+		GzippedNBT: []byte{},
 	}
 
 	err := ProtocolWriteSlotSlice(w, []Slot{slot})
@@ -40,14 +40,14 @@ func TestProtocolSlotWriterForEmptySlot(t *testing.T) {
 	Expect(t, b.Len(), ToEqual, 0)
 }
 
-func TestProtocolSlotWriterForEmptyCompressedNBT(t *testing.T) {
+func TestProtocolSlotWriterForEmptyGzippedNBT(t *testing.T) {
 	// zero-length data should write -1 instead of 0 for size
 	w, b := createProtocolWriter()
 	slot := Slot{
-		ID:            1,
-		Count:         5,
-		Damage:        10,
-		CompressedNBT: []byte{},
+		ID:         1,
+		Count:      5,
+		Damage:     10,
+		GzippedNBT: []byte{},
 	}
 
 	err := ProtocolWriteSlot(w, slot)

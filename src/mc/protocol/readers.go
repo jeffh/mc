@@ -17,9 +17,10 @@ type Reader struct {
 	stream  io.Reader
 	readers DataReaders
 	mapper  NewPacketStructer
+	Logger  Logger
 }
 
-func NewReader(stream io.Reader, r DataReaders, m NewPacketStructer) *Reader {
+func NewReader(stream io.Reader, m NewPacketStructer, r DataReaders, l Logger) *Reader {
 	if r == nil {
 		r = DefaultDataReaders
 	}
@@ -30,6 +31,7 @@ func NewReader(stream io.Reader, r DataReaders, m NewPacketStructer) *Reader {
 		stream:  stream,
 		readers: r,
 		mapper:  m,
+		Logger:  l,
 	}
 }
 

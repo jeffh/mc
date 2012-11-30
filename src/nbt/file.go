@@ -2,9 +2,9 @@
 package nbt
 
 import (
-    "io"
-    "errors"
-    "encoding/binary"
+	"encoding/binary"
+	"errors"
+	"io"
 )
 
 //////////////////////////////////////////////////////////////////
@@ -12,8 +12,8 @@ import (
 // Handles the translation to and from NBT files.
 // Currently, only reading is supported
 type File struct {
-    reader io.Reader
-    ByteOrder binary.ByteOrder
+	reader    io.Reader
+	ByteOrder binary.ByteOrder
 }
 
 // Creates a new NBT File instance that accepts an io.Reader that is
@@ -30,10 +30,10 @@ type File struct {
 //     f := NewFile(r)
 //     f.ByteOrder = binary.LittleEndian
 func NewFile(r io.Reader) *File {
-    return &File{
-        reader: r,
-        ByteOrder: binary.BigEndian,
-    }
+	return &File{
+		reader:    r,
+		ByteOrder: binary.BigEndian,
+	}
 }
 
 // Parses the entire NBT format. Each data type is contained in a
@@ -45,11 +45,11 @@ func NewFile(r io.Reader) *File {
 // Returns an error if parsing failed in any way.
 //
 func (f *File) Read() (Tag, error) {
-    if f.reader == nil {
-        return InvalidTag, errors.New("No Reader specified")
-    }
-    r := &reader{f.reader, f.ByteOrder}
-    return r.Read()
+	if f.reader == nil {
+		return InvalidTag, errors.New("No Reader specified")
+	}
+	r := &reader{f.reader, f.ByteOrder}
+	return r.Read()
 }
 
 // Parses the NBT format into a struct. This behaves similarly to
@@ -95,9 +95,10 @@ func (f *File) Read() (Tag, error) {
 // when processing the NBT file.
 //
 func (f *File) ReadInto(v interface{}) error {
-    tag, err := f.Read()
-    if err != nil { return err }
-    m := &mapper{ tag }
-    return m.Read(v)
+	tag, err := f.Read()
+	if err != nil {
+		return err
+	}
+	m := &mapper{tag}
+	return m.Read(v)
 }
-

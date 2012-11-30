@@ -17,9 +17,10 @@ type Writer struct {
 	stream  io.Writer
 	writers DataWriters
 	mapper  GetPacketTyper
+	Logger  Logger
 }
 
-func NewWriter(stream io.Writer, w DataWriters, m GetPacketTyper) *Writer {
+func NewWriter(stream io.Writer, m GetPacketTyper, w DataWriters, l Logger) *Writer {
 	if w == nil {
 		w = DefaultDataWriters
 	}
@@ -30,6 +31,7 @@ func NewWriter(stream io.Writer, w DataWriters, m GetPacketTyper) *Writer {
 		stream:  stream,
 		writers: w,
 		mapper:  m,
+		Logger:  l,
 	}
 }
 

@@ -5,11 +5,10 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"fmt"
-	//"encoding/binary"
-	//"bytes"
 	"io"
 )
 
+// Handles the handshake to a minecraft server. Uses a plaintext connection.
 func EstablishPlaintextConnection(c *Connection, h *Handshake) (err error) {
 	err = c.WritePacket(h)
 	if err != nil {
@@ -36,6 +35,8 @@ func EstablishPlaintextConnection(c *Connection, h *Handshake) (err error) {
 //
 // The encryption upgrading of the socket stream has to be done
 // immediately after the connection has been established without errors.
+//
+// Currently broken. Use EstablishPlaintextConnection for now.
 func EstablishEncryptedConnection(c *Connection, h *Handshake, secret []byte) (err error) {
 	if len(secret) != 16 {
 		panic("Secret must be 16-bytes")

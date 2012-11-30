@@ -22,6 +22,6 @@ func (b *ClosableBuffer) Close() error {
 
 func createClient() (*Client, *ClosableBuffer) {
 	buf := newClosableBuffer()
-	c := NewClient(buf)
+	c := NewClient(buf, nil)
 	return c, buf
 }

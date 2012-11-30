@@ -3,9 +3,7 @@ package mc
 import (
 	"fmt"
 	"io"
-	"log"
 	"mc/protocol"
-	"os"
 	//"unicode/utf16"
 )
 
@@ -24,14 +22,17 @@ type Client struct {
 	AutoKeepAlive bool
 }
 
-func NewClient(stream io.ReadWriteCloser) *Client {
-	reader := protocol.NewReader(stream, nil, protocol.ClientPacketMapper)
-	writer := protocol.NewWriter(stream, nil, protocol.ClientPacketMapper)
+func NewClient(stream io.ReadWriteCloser, l Logger) *Client {
+	if l == nil {
+		l = &protocol.NullLogger{}
+	}
+	reader := protocol.NewReader(stream, protocol.ClientPacketMapper, nil, l)
+	writer := protocol.NewWriter(stream, protocol.ClientPacketMapper, nil, l)
 	return &Client{
 		Connection:    protocol.NewConnection(reader, writer),
 		Outbox:        make(chan interface{}, 50),
 		Inbox:         make(chan interface{}, 50),
-		Logger:        log.New(os.Stdout, "", log.LstdFlags),
+		Logger:        l,
 		Exited:        make(chan bool),
 		AutoKeepAlive: true,
 	}
@@ -63,9 +64,9 @@ func (c *Client) performConnect(hostname string, port int32, username string, us
 	}
 	if c.LogTraffic {
 		if useEncryption {
-			c.log("[Logging in] (With Encryption) %v", handshake)
+			c.log("[mc/Client] Logging in with encryption %v", handshake)
 		} else {
-			c.log("[Logging in] (No Encryption) %v", handshake)
+			c.log("[mc/Client] Logging in with NO encryption %v", handshake)
 		}
 	}
 
@@ -99,7 +100,7 @@ func (c *Client) ConnectUnencrypted(hostname string, port int32, username string
 	return c.performConnect(hostname, port, username, false)
 }
 
-func (c *Client) Connect(hostname string, port int32, username string) error {
+func (c *Client) ConnectEncrypted(hostname string, port int32, username string) error {
 	return c.performConnect(hostname, port, username, true)
 }
 

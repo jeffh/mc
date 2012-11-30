@@ -1,15 +1,41 @@
 package protocol
 
 import (
+	"bytes"
+	"compress/gzip"
 	. "describe"
+	"io"
+	"io/ioutil"
 	"testing"
 )
 
+func TestSlotCanReturnReaderOfItsTrueData(t *testing.T) {
+	expectedData := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9}
+	rawReader := bytes.NewBuffer(expectedData)
+	compressedOutput := bytes.NewBuffer([]byte{})
+	reader := gzip.NewWriter(compressedOutput)
+	_, err := io.Copy(reader, rawReader)
+	reader.Close()
+	Expect(t, err, ToBeNil)
+
+	compressed, err := ioutil.ReadAll(compressedOutput)
+	Expect(t, err, ToBeNil)
+
+	s := Slot{GzippedNBT: compressed}
+	r, err := s.NewReader()
+	Expect(t, err, ToBeNil)
+
+	data, err := ioutil.ReadAll(r)
+	Expect(t, err, ToBeNil)
+	Expect(t, data, ToDeeplyEqual, expectedData)
+}
+
 func TestSlotIsEmptyIfIDIsNegOne(t *testing.T) {
+	// negative -1 is empty
 	s := Slot{ID: -1}
 	Expect(t, s.IsEmpty(), ToBeTrue)
 
-	s = EmptySlot
+	s = EmptySlot // alias to one above
 	Expect(t, s.IsEmpty(), ToBeTrue)
 
 	s = Slot{ID: 1}

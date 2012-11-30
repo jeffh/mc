@@ -111,16 +111,14 @@ func ProtocolReadSlot(r *Reader) (v interface{}, err error) {
 		return
 	}
 
-	s.CompressedNBT = make([]byte, 0)
+	s.GzippedNBT = make([]byte, 0)
 	for i := int16(0); i < size; i++ {
 		var value byte
 		err = r.ReadValue(&value)
 		if err != nil {
 			return
 		}
-		s.CompressedNBT = append(s.CompressedNBT, value)
-		// currently, just toss it all
-		// the data is gzipped-NBT format
+		s.GzippedNBT = append(s.GzippedNBT, value)
 	}
 	return
 }

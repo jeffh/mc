@@ -9,7 +9,7 @@ import (
 /////////////////////////////////////////////////////////////////////
 func createProtocolWriter() (*Writer, *bytes.Buffer) {
 	b := bytes.NewBuffer([]byte{})
-	w := NewWriter(b, nil, ClientPacketMapper)
+	w := NewWriter(b, ClientPacketMapper, nil, &NullLogger{})
 	return w, b
 }
 

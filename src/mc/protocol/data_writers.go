@@ -52,11 +52,11 @@ func ProtocolWriteSlot(w *Writer, v interface{}) error {
 		return err
 	}
 
-	if len(slot.CompressedNBT) == 0 {
+	if len(slot.GzippedNBT) == 0 {
 		return w.WriteValue(int16(-1))
 	}
 
-	err = w.WriteValue(int16(len(slot.CompressedNBT)))
+	err = w.WriteValue(int16(len(slot.GzippedNBT)))
 	if err != nil {
 		return err
 	}

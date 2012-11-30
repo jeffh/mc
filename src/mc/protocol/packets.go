@@ -1,5 +1,11 @@
 package protocol
 
+import (
+	"bytes"
+	"compress/gzip"
+	"io"
+)
+
 // protocol version supported
 const Version = 49
 
@@ -505,16 +511,20 @@ type ChunkBulkMetadata struct {
 
 // represents an item
 type Slot struct {
-	ID            int16
-	Count         int8
-	Damage        int16
-	CompressedNBT []byte
+	ID         int16
+	Count      int8
+	Damage     int16
+	GzippedNBT []byte
 }
 
 var EmptySlot = Slot{ID: -1}
 
 func (s *Slot) IsEmpty() bool {
 	return s.ID == -1
+}
+
+func (s *Slot) NewReader() (io.Reader, error) {
+	return gzip.NewReader(bytes.NewReader(s.GzippedNBT))
 }
 
 // requires special parsing
