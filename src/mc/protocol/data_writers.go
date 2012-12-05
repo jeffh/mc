@@ -25,9 +25,34 @@ func init() {
 
 	DefaultDataWriters.Add([]Slot{}, ProtocolWriteSlotSlice)
 	DefaultDataWriters.Add(Slot{}, ProtocolWriteSlot)
+
+	DefaultDataWriters.Add([]EntityMetadata{}, ProtocolWriteEntityMetadataSlice)
 }
 
 /////////////////////////////////////////////////////////////////
+
+func entityKey(id EntityMetadataIndex, typ EntityMetadataType) byte {
+	return byte(id) | (byte(typ) << 5)
+}
+
+/////////////////////////////////////////////////////////////////
+
+func ProtocolWriteEntityMetadataSlice(w *Writer, v interface{}) error {
+	metadatas := v.([]EntityMetadata)
+
+	for _, md := range metadatas {
+		err := w.WriteValue(entityKey(md.ID, md.Type))
+		if err != nil {
+			return err
+		}
+		err = w.WriteDispatch(md.Value)
+		if err != nil {
+			return err
+		}
+	}
+
+	return w.WriteValue(byte(127))
+}
 
 func ProtocolWriteSlot(w *Writer, v interface{}) error {
 	slot := v.(Slot)

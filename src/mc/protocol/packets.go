@@ -53,7 +53,7 @@ func init() {
 	basePacketMapper.Define(0x23, EntityHeadLook{})
 	basePacketMapper.Define(0x26, EntityStatus{})
 	basePacketMapper.Define(0x27, AttachEntity{})
-	basePacketMapper.Define(0x28, EntityMetadata{})
+	basePacketMapper.Define(0x28, SetEntityMetadata{})
 	basePacketMapper.Define(0x29, EntityEffect{})
 	basePacketMapper.Define(0x2A, RemoveEntityEffect{})
 	basePacketMapper.Define(0x2B, SetExperience{})
@@ -226,7 +226,7 @@ type SpawnNamedEntity struct {
 	X, Y, Z     int32
 	Yaw, Pitch  int8
 	CurrentItem int16
-	Metadata    EntityMetadata
+	Metadata    []EntityMetadata
 }
 type SpawnDroppedItem struct {
 	EntityID              int32
@@ -251,7 +251,7 @@ type SpawnMob struct {
 	X, Y, Z                         int32
 	Yaw, Pitch, HeadYaw             int8
 	ZVelocity, XVelocity, YVelocity int16
-	Metadata                        EntityMetadata
+	Metadata                        []EntityMetadata
 }
 type SpawnPainting struct {
 	EntityID           int32
@@ -305,7 +305,7 @@ type AttachEntity struct {
 }
 type SetEntityMetadata struct {
 	EntityID int32
-	Metadata EntityMetadata
+	Metadata []EntityMetadata
 }
 type EntityEffect struct {
 	EntityID  int32
@@ -327,12 +327,12 @@ type ChunkData struct {
 	IsGroundUpContinuous bool
 	PrimaryBitMap        uint16
 	AddBitMap            uint16
-	CompressedData       []uint8 // compressed via zlib; see http://www.wiki.vg/Map_Format
+	ZlibData             Int32PrefixedBytes // compressed via zlib; see http://www.wiki.vg/Map_Format
 }
 type MultiBlockChange struct {
 	ChunkX, ChunkY int32
 	RecordCount    int16
-	Data           []int32 // see http://www.wiki.vg/Protocol#Multi_Block_Change_.280x34.29
+	Data           Int32PrefixedBytes // see http://www.wiki.vg/Protocol#Multi_Block_Change_.280x34.29
 }
 type BlockChange struct {
 	X        int32
@@ -530,19 +530,57 @@ func (s *Slot) NewReader() (io.Reader, error) {
 // requires special parsing
 // see http://www.wiki.vg/Entities#Entity_Metadata_Format
 // clients require at least one piece of metadata (index 0, 1, or 8)
+// indicates various entity states:
+// bit index | bit mask | meaning
+// 0         | 0x01     | Entity on Fire
+// 1         | 0x02     | Entity crouched
+// 2         | 0x04     | Entity riding
+// 3         | 0x08     | Entity sprinting
+// 4         | 0x10     | Eating/Drinking/Blocking/RightClickActions
+//
+// This represents one entry
 type EntityMetadata struct {
-	// indicates various entity states:
-	// bit index | bit mask | meaning
-	// 0         | 0x01     | Entity on Fire
-	// 1         | 0x02     | Entity crouched
-	// 2         | 0x04     | Entity riding
-	// 3         | 0x08     | Entity sprinting
-	// 4         | 0x10     | Eating/Drinking/Blocking/RightClickActions
-	Flags        int8  // index 0
-	DrownCounter int8  // index 1: starts at 300 -> -19
-	PotionEffect int32 // index 8: 0x00RRGGBB or 0 if no effects
-	Animals      int32 // index 12: -23999 = baby -> 0 = normal <- 6000 = parent
+	ID    EntityMetadataIndex
+	Type  EntityMetadataType
+	Value interface{}
 }
+
+type Int32PrefixedBytes []byte
+
+//////////////////////////////////////////////////////
+// currently for position parsing of EntityMetadataType 0x06
+type Position struct {
+	X, Y, Z int32
+}
+
+//////////////////////////////////////////////////////
+
+type EntityMetadataIndex byte
+
+const (
+	EntityFlags         EntityMetadataIndex = 0
+	EntityDrowning                          = 1
+	EntityUnderPotionFX                     = 8
+	EntityAnimalCounter                     = 12
+	EntityState1                            = 16 // ie - creeper fuse, dragon hp, slime size etc.
+	EntityState2                            = 17 // ie - enderman item metadata
+	EntityState3                            = 18 // ie - enderman aggression
+	EntityState4                            = 19 // ie - wolf unknown, minecart damage
+)
+
+//////////////////////////////////////////////////////
+
+type EntityMetadataType byte
+
+const (
+	EntityMetadataByte EntityMetadataType = iota
+	EntityMetadataShort
+	EntityMetadataInt
+	EntityMetadataFloat
+	EntityMetadataString
+	EntityMetadataSlot
+	EntityMetadataPosition // x, y, z int
+)
 
 //////////////////////////////////////////////////////
 

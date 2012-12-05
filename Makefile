@@ -1,4 +1,5 @@
 PACKAGES=mc mc/protocol nbt
+FMT_PACKAGES=$(PACKAGES) describe
 OUTFILE=mc
 MAINFILE=src/main.go
 
@@ -7,7 +8,7 @@ VARS=GOPATH=`pwd`
 all: format test build
 
 format:
-	$(VARS) go fmt $(PACKAGES)
+	$(VARS) go fmt $(FMT_PACKAGES)
 
 test:
 	$(VARS) go test -i $(PACKAGES)

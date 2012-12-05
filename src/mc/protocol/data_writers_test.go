@@ -5,6 +5,47 @@ import (
 	"testing"
 )
 
+func TestProtocolEntityMetadataSliceWriter(t *testing.T) {
+	w, b := createProtocolWriter()
+	metadata := []EntityMetadata{
+		{EntityFlags, EntityMetadataByte, byte(6)},
+		{EntityDrowning, EntityMetadataShort, int16(42)},
+		{EntityUnderPotionFX, EntityMetadataInt, int32(4432)},
+		{EntityAnimalCounter, EntityMetadataFloat, float32(0.5)},
+		{EntityState1, EntityMetadataString, "There is no spoon"},
+		{EntityState2, EntityMetadataSlot, EmptySlot},
+		{EntityState3, EntityMetadataPosition, Position{2, 4, 6}},
+	}
+
+	err := ProtocolWriteEntityMetadataSlice(w, metadata)
+	Expect(t, err, ToBeNil)
+
+	Expect(t, b.Bytes(), ToEqualBytes,
+		// these don't represent actual data types
+		// but we're just testing our flexibility to parse everything
+		entityKey(EntityFlags, EntityMetadataByte), byte(6),
+		entityKey(EntityDrowning, EntityMetadataShort), int16(42),
+		entityKey(EntityUnderPotionFX, EntityMetadataInt), int32(4432),
+		entityKey(EntityAnimalCounter, EntityMetadataFloat), float32(0.5),
+		entityKey(EntityState1, EntityMetadataString), "There is no spoon",
+		entityKey(EntityState2, EntityMetadataSlot), int16(-1),
+		entityKey(EntityState3, EntityMetadataPosition), int32(2), int32(4), int32(6),
+		byte(127))
+}
+
+func TestProtocolEntityMetadataEmptySliceWriter(t *testing.T) {
+	w, b := createProtocolWriter()
+	metadata := []EntityMetadata{}
+
+	err := ProtocolWriteEntityMetadataSlice(w, metadata)
+	Expect(t, err, ToBeNil)
+
+	var term byte
+	err = readBytes(b, &term)
+	Expect(t, err, ToBeNil)
+	Expect(t, term, ToEqual, byte(127))
+}
+
 func TestProtocolSlotSliceWriter(t *testing.T) {
 	w, b := createProtocolWriter()
 	slot := Slot{

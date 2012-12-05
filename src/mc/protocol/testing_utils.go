@@ -1,11 +1,26 @@
 package protocol
 
 import (
+	"bytes"
+	"describe"
 	"encoding/binary"
 	"io"
 	"reflect"
 	"unicode/utf16"
 )
+
+func ToEqualBytes(b []byte, values ...interface{}) (string, bool) {
+	buf := bytes.NewBuffer([]byte{})
+	err := writeBytes(buf, values...)
+	if err != nil {
+		return err.Error(), false
+	}
+	expectedBytes := buf.Bytes()
+	if err != nil {
+		return err.Error(), false
+	}
+	return describe.ToDeeplyEqual(b, expectedBytes)
+}
 
 func readBytes(b io.Reader, values ...interface{}) error {
 	for _, v := range values {

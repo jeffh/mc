@@ -26,9 +26,90 @@ func init() {
 	DefaultDataReaders.Add([]byte{}, ProtocolReadByteSlice)
 	DefaultDataReaders.Add([]Slot{}, ProtocolReadSlotSlice)
 	DefaultDataReaders.Add(Slot{}, ProtocolReadSlot)
+	DefaultDataReaders.Add(Int32PrefixedBytes{}, ProtocolReadInt32PrefixedBytes)
 }
 
 //////////////////////////////////////////////////////////
+
+func ProtocolReadInt32PrefixedBytes(r *Reader) (v interface{}, err error) {
+
+    var size int32
+    err = r.ReadDispatch(&size)
+    if err != nil { return }
+
+    bytes := make(Int32PrefixedBytes, size)
+    for i := int32(0); i<size; i++ {
+        var byt byte
+        err = r.ReadDispatch(&byt)
+        if err != nil { return }
+        bytes[i] = byt
+    }
+
+    v = bytes
+    return
+}
+
+func ProtocolReadEntityMetadataSlice(r *Reader) (v interface{}, err error) {
+	slice := make([]EntityMetadata, 0)
+
+	var b byte
+	for {
+		err = r.ReadValue(&b)
+		if err != nil {
+			return
+		}
+		if b == byte(127) {
+			break
+		}
+		// lower 5 bits is ID (keys)
+		// upper 3 bits is type
+		em := EntityMetadata{
+			ID:   EntityMetadataIndex(b & 0x1F),
+			Type: EntityMetadataType((b & 0xE0) >> 5),
+		}
+		switch em.Type {
+		case EntityMetadataByte:
+			byt := byte(0)
+			err = r.ReadDispatch(&byt)
+			em.Value = byt
+		case EntityMetadataShort:
+			i := int16(0)
+			err = r.ReadDispatch(&i)
+			em.Value = i
+		case EntityMetadataInt:
+			i := int32(0)
+			err = r.ReadDispatch(&i)
+			em.Value = i
+		case EntityMetadataFloat:
+			f := float32(0)
+			err = r.ReadDispatch(&f)
+			em.Value = f
+		case EntityMetadataString:
+			s := ""
+			err = r.ReadDispatch(&s)
+			em.Value = s
+		case EntityMetadataSlot:
+			s := Slot{}
+			err = r.ReadDispatch(&s)
+			em.Value = s
+		case EntityMetadataPosition:
+			p := Position{}
+			err = r.ReadDispatch(&p)
+			em.Value = p
+		default:
+			err = fmt.Errorf("Unsupported EntityType: (got 0x%x)", em.Type)
+		}
+
+		if err != nil {
+			return
+		}
+
+		slice = append(slice, em)
+	}
+
+	v = slice
+	return
+}
 
 func ProtocolReadSlotSlice(r *Reader) (v interface{}, err error) {
 	var size uint16

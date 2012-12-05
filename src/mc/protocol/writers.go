@@ -70,7 +70,7 @@ func (w *Writer) WriteDispatch(value interface{}) error {
 	}
 
 	if v.Kind() == reflect.Struct {
-		w.WriteStruct(value)
+		return w.WriteStruct(value)
 	}
 
 	return w.WriteValue(v.Interface())
@@ -81,7 +81,10 @@ func (w *Writer) WriteDispatch(value interface{}) error {
 //
 // The value given should be a slice to write its data
 func (w *Writer) WriteStruct(v interface{}) (err error) {
-	value := reflect.ValueOf(v).Elem()
+	value := reflect.ValueOf(v)
+	if value.Kind() == reflect.Ptr {
+		value = value.Elem()
+	}
 	size := value.NumField()
 	for i := 0; i < size; i++ {
 		field := value.Field(i)

@@ -5,6 +5,65 @@ import (
 	"testing"
 )
 
+func TestProtocolInt32PrefixedBytes(t *testing.T) {
+	r, b := createProtocolReader()
+    err := writeBytes(b,
+        int32(4),
+        byte(1), byte(2), byte(3), byte(4),
+    )
+	Expect(t, err, ToBeNil)
+
+    v, err := ProtocolReadInt32PrefixedBytes(r)
+	Expect(t, err, ToBeNil)
+    bytes, ok := v.(Int32PrefixedBytes)
+    Expect(t, ok, ToBeTrue)
+    Expect(t, bytes, ToDeeplyEqual, Int32PrefixedBytes{ 1, 2, 3, 4 })
+}
+
+func TestProtocolEntityMetadataSliceReaderShouldParseBasicTypes(t *testing.T) {
+	r, b := createProtocolReader()
+	err := writeBytes(b,
+		// these don't represent actual data types
+		// but we're just testing our flexibility to parse everything
+		entityKey(EntityFlags, EntityMetadataByte), byte(6),
+		entityKey(EntityDrowning, EntityMetadataShort), int16(42),
+		entityKey(EntityUnderPotionFX, EntityMetadataInt), int32(4432),
+		entityKey(EntityAnimalCounter, EntityMetadataFloat), float32(0.5),
+		entityKey(EntityState1, EntityMetadataString), "There is no spoon",
+		entityKey(EntityState2, EntityMetadataSlot), int16(-1),
+		entityKey(EntityState3, EntityMetadataPosition), int32(2), int32(4), int32(6),
+		byte(127))
+	Expect(t, err, ToBeNil)
+
+	v, err := ProtocolReadEntityMetadataSlice(r)
+	Expect(t, err, ToBeNil)
+	slice, ok := v.([]EntityMetadata)
+	Expect(t, ok, ToBeTrue)
+	Expect(t, slice, ToDeeplyEqual, []EntityMetadata{
+		{EntityFlags, EntityMetadataByte, byte(6)},
+		{EntityDrowning, EntityMetadataShort, int16(42)},
+		{EntityUnderPotionFX, EntityMetadataInt, int32(4432)},
+		{EntityAnimalCounter, EntityMetadataFloat, float32(0.5)},
+		{EntityState1, EntityMetadataString, "There is no spoon"},
+		{EntityState2, EntityMetadataSlot, EmptySlot},
+		{EntityState3, EntityMetadataPosition, Position{2, 4, 6}},
+	})
+	Expect(t, b.Len(), ToEqual, 0)
+}
+
+func TestProtocolEntityMetadataSliceReaderShouldStopOn127Byte(t *testing.T) {
+	r, b := createProtocolReader()
+	err := writeBytes(b, byte(127))
+	Expect(t, err, ToBeNil)
+
+	v, err := ProtocolReadEntityMetadataSlice(r)
+	Expect(t, err, ToBeNil)
+	slice, ok := v.([]EntityMetadata)
+	Expect(t, ok, ToBeTrue)
+	Expect(t, slice, ToBeLengthOf, 0)
+	Expect(t, b.Len(), ToEqual, 0)
+}
+
 func TestProtocolStringReader(t *testing.T) {
 	r, b := createProtocolReader()
 	err := writeBytes(b, "hello world")
@@ -13,6 +72,7 @@ func TestProtocolStringReader(t *testing.T) {
 	v, err := ProtocolReadString(r)
 	Expect(t, err, ToBeNil)
 	Expect(t, v, ToEqual, "hello world")
+	Expect(t, b.Len(), ToEqual, 0)
 }
 
 func TestProtocolSlotSliceReader(t *testing.T) {
@@ -80,21 +140,4 @@ func TestProtocolSlotReaderForEmptyGzippedNBT(t *testing.T) {
 	Expect(t, slot.Damage, ToEqual, int16(99))
 	Expect(t, slot.GzippedNBT, ToBeLengthOf, 0)
 	Expect(t, b.Len(), ToEqual, 0)
-}
-
-func TestProtocolEntityMetadataTypeReader(t *testing.T) {
-}
-func TestProtocolDestroyEntityReader(t *testing.T) {
-}
-func TestProtocolChunkDataReader(t *testing.T) {
-}
-func TestProtocolMultiBlockChangeReader(t *testing.T) {
-}
-func TestProtocolMapChunkBulkReader(t *testing.T) {
-}
-func TestProtocolSetWindowItemsReader(t *testing.T) {
-}
-func TestProtocolItemDataReader(t *testing.T) {
-}
-func TestProtocolPluginMessageReader(t *testing.T) {
 }
