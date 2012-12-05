@@ -11,7 +11,7 @@ func main() {
     hostport := fmt.Sprintf("%s:%d", host, port)
     conn, err := net.Dial("tcp", hostport)
     if err != nil { panic(err) }
-    c := mc.NewClient(conn)
+    c := mc.NewClient(conn, nil)
     c.LogTraffic = true
     err = c.ConnectUnencrypted(host, port, "MCBot")
     //err = c.Connect("localhost", 1337, "MCBot")
