@@ -2,8 +2,8 @@ package protocol
 
 import (
 	"bytes"
-	. "describe"
 	"fmt"
+	. "github.com/jeffh/goexpect"
 	"testing"
 )
 

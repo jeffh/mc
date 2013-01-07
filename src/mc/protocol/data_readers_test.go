@@ -1,23 +1,23 @@
 package protocol
 
 import (
-	. "describe"
+	. "github.com/jeffh/goexpect"
 	"testing"
 )
 
 func TestProtocolInt32PrefixedBytes(t *testing.T) {
 	r, b := createProtocolReader()
-    err := writeBytes(b,
-        int32(4),
-        byte(1), byte(2), byte(3), byte(4),
-    )
+	err := writeBytes(b,
+		int32(4),
+		byte(1), byte(2), byte(3), byte(4),
+	)
 	Expect(t, err, ToBeNil)
 
-    v, err := ProtocolReadInt32PrefixedBytes(r)
+	v, err := ProtocolReadInt32PrefixedBytes(r)
 	Expect(t, err, ToBeNil)
-    bytes, ok := v.(Int32PrefixedBytes)
-    Expect(t, ok, ToBeTrue)
-    Expect(t, bytes, ToEqual, Int32PrefixedBytes{ 1, 2, 3, 4 })
+	bytes, ok := v.(Int32PrefixedBytes)
+	Expect(t, ok, ToBeTrue)
+	Expect(t, bytes, ToEqual, Int32PrefixedBytes{1, 2, 3, 4})
 }
 
 func TestProtocolEntityMetadataSliceReaderShouldParseBasicTypes(t *testing.T) {

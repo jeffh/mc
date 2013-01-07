@@ -1,5 +1,5 @@
 PACKAGES=mc mc/protocol nbt
-FMT_PACKAGES=$(PACKAGES) describe
+FMT_PACKAGES=$(PACKAGES)
 OUTFILE=mc
 MAINFILE=src/main.go
 

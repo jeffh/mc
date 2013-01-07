@@ -3,7 +3,7 @@ package nbt
 import (
 	"bytes"
 	"compress/gzip"
-	. "describe"
+	. "github.com/jeffh/goexpect"
 	"io"
 	"os"
 	"path/filepath"

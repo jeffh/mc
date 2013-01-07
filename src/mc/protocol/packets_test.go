@@ -3,7 +3,7 @@ package protocol
 import (
 	"bytes"
 	"compress/gzip"
-	. "describe"
+	. "github.com/jeffh/goexpect"
 	"io"
 	"io/ioutil"
 	"testing"

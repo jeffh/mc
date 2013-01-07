@@ -4,8 +4,8 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"crypto/x509"
-	. "describe"
 	"fmt"
+	. "github.com/jeffh/goexpect"
 	"testing"
 )
 

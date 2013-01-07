@@ -2,8 +2,8 @@ package protocol
 
 import (
 	"bytes"
-	"describe"
 	"encoding/binary"
+	"github.com/jeffh/goexpect"
 	"io"
 	"reflect"
 	"unicode/utf16"
@@ -19,7 +19,7 @@ func ToEqualBytes(b []byte, values ...interface{}) (string, bool) {
 	if err != nil {
 		return err.Error(), false
 	}
-	return describe.ToEqual(b, expectedBytes)
+	return goexpect.ToEqual(b, expectedBytes)
 }
 
 func readBytes(b io.Reader, values ...interface{}) error {

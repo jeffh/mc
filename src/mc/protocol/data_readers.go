@@ -33,20 +33,24 @@ func init() {
 
 func ProtocolReadInt32PrefixedBytes(r *Reader) (v interface{}, err error) {
 
-    var size int32
-    err = r.ReadDispatch(&size)
-    if err != nil { return }
+	var size int32
+	err = r.ReadDispatch(&size)
+	if err != nil {
+		return
+	}
 
-    bytes := make(Int32PrefixedBytes, size)
-    for i := int32(0); i<size; i++ {
-        var byt byte
-        err = r.ReadDispatch(&byt)
-        if err != nil { return }
-        bytes[i] = byt
-    }
+	bytes := make(Int32PrefixedBytes, size)
+	for i := int32(0); i < size; i++ {
+		var byt byte
+		err = r.ReadDispatch(&byt)
+		if err != nil {
+			return
+		}
+		bytes[i] = byt
+	}
 
-    v = bytes
-    return
+	v = bytes
+	return
 }
 
 func ProtocolReadEntityMetadataSlice(r *Reader) (v interface{}, err error) {

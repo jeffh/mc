@@ -1,7 +1,7 @@
 package protocol
 
 import (
-	. "describe"
+	. "github.com/jeffh/goexpect"
 	"testing"
 )
 

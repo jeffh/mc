@@ -2,7 +2,7 @@ package protocol
 
 import (
 	"bytes"
-	. "describe"
+	. "github.com/jeffh/goexpect"
 	"testing"
 )
 
