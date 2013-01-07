@@ -17,7 +17,7 @@ func TestProtocolInt32PrefixedBytes(t *testing.T) {
 	Expect(t, err, ToBeNil)
     bytes, ok := v.(Int32PrefixedBytes)
     Expect(t, ok, ToBeTrue)
-    Expect(t, bytes, ToDeeplyEqual, Int32PrefixedBytes{ 1, 2, 3, 4 })
+    Expect(t, bytes, ToEqual, Int32PrefixedBytes{ 1, 2, 3, 4 })
 }
 
 func TestProtocolEntityMetadataSliceReaderShouldParseBasicTypes(t *testing.T) {
@@ -39,7 +39,7 @@ func TestProtocolEntityMetadataSliceReaderShouldParseBasicTypes(t *testing.T) {
 	Expect(t, err, ToBeNil)
 	slice, ok := v.([]EntityMetadata)
 	Expect(t, ok, ToBeTrue)
-	Expect(t, slice, ToDeeplyEqual, []EntityMetadata{
+	Expect(t, slice, ToEqual, []EntityMetadata{
 		{EntityFlags, EntityMetadataByte, byte(6)},
 		{EntityDrowning, EntityMetadataShort, int16(42)},
 		{EntityUnderPotionFX, EntityMetadataInt, int32(4432)},
@@ -48,7 +48,7 @@ func TestProtocolEntityMetadataSliceReaderShouldParseBasicTypes(t *testing.T) {
 		{EntityState2, EntityMetadataSlot, EmptySlot},
 		{EntityState3, EntityMetadataPosition, Position{2, 4, 6}},
 	})
-	Expect(t, b.Len(), ToEqual, 0)
+	Expect(t, b.Len(), ToBe, 0)
 }
 
 func TestProtocolEntityMetadataSliceReaderShouldStopOn127Byte(t *testing.T) {
@@ -61,7 +61,7 @@ func TestProtocolEntityMetadataSliceReaderShouldStopOn127Byte(t *testing.T) {
 	slice, ok := v.([]EntityMetadata)
 	Expect(t, ok, ToBeTrue)
 	Expect(t, slice, ToBeLengthOf, 0)
-	Expect(t, b.Len(), ToEqual, 0)
+	Expect(t, b.Len(), ToBe, 0)
 }
 
 func TestProtocolStringReader(t *testing.T) {
@@ -71,8 +71,8 @@ func TestProtocolStringReader(t *testing.T) {
 
 	v, err := ProtocolReadString(r)
 	Expect(t, err, ToBeNil)
-	Expect(t, v, ToEqual, "hello world")
-	Expect(t, b.Len(), ToEqual, 0)
+	Expect(t, v, ToBe, "hello world")
+	Expect(t, b.Len(), ToBe, 0)
 }
 
 func TestProtocolSlotSliceReader(t *testing.T) {
@@ -88,11 +88,11 @@ func TestProtocolSlotSliceReader(t *testing.T) {
 	Expect(t, ok, ToBeTrue)
 	Expect(t, slots, ToBeLengthOf, 1)
 	slot := slots[0]
-	Expect(t, slot.ID, ToEqual, int16(2))
-	Expect(t, slot.Count, ToEqual, int8(100))
-	Expect(t, slot.Damage, ToEqual, int16(99))
+	Expect(t, slot.ID, ToBe, int16(2))
+	Expect(t, slot.Count, ToBe, int8(100))
+	Expect(t, slot.Damage, ToBe, int16(99))
 	Expect(t, slot.GzippedNBT, ToBeLengthOf, 2)
-	Expect(t, b.Len(), ToEqual, 0)
+	Expect(t, b.Len(), ToBe, 0)
 }
 
 func TestProtocolSlotReader(t *testing.T) {
@@ -106,11 +106,11 @@ func TestProtocolSlotReader(t *testing.T) {
 	Expect(t, err, ToBeNil)
 	slot, ok := v.(Slot)
 	Expect(t, ok, ToBeTrue)
-	Expect(t, slot.ID, ToEqual, int16(2))
-	Expect(t, slot.Count, ToEqual, int8(100))
-	Expect(t, slot.Damage, ToEqual, int16(99))
+	Expect(t, slot.ID, ToBe, int16(2))
+	Expect(t, slot.Count, ToBe, int8(100))
+	Expect(t, slot.Damage, ToBe, int16(99))
 	Expect(t, slot.GzippedNBT, ToBeLengthOf, 2)
-	Expect(t, b.Len(), ToEqual, 0)
+	Expect(t, b.Len(), ToBe, 0)
 }
 
 func TestProtocolSlotReaderForEmptySlot(t *testing.T) {
@@ -122,8 +122,8 @@ func TestProtocolSlotReaderForEmptySlot(t *testing.T) {
 	Expect(t, err, ToBeNil)
 	slot, ok := v.(Slot)
 	Expect(t, ok, ToBeTrue)
-	Expect(t, slot.ID, ToEqual, int16(-1))
-	Expect(t, b.Len(), ToEqual, 0)
+	Expect(t, slot.ID, ToBe, int16(-1))
+	Expect(t, b.Len(), ToBe, 0)
 }
 
 func TestProtocolSlotReaderForEmptyGzippedNBT(t *testing.T) {
@@ -135,9 +135,9 @@ func TestProtocolSlotReaderForEmptyGzippedNBT(t *testing.T) {
 	Expect(t, err, ToBeNil)
 	slot, ok := v.(Slot)
 	Expect(t, ok, ToBeTrue)
-	Expect(t, slot.ID, ToEqual, int16(2))
-	Expect(t, slot.Count, ToEqual, int8(100))
-	Expect(t, slot.Damage, ToEqual, int16(99))
+	Expect(t, slot.ID, ToBe, int16(2))
+	Expect(t, slot.Count, ToBe, int8(100))
+	Expect(t, slot.Damage, ToBe, int16(99))
 	Expect(t, slot.GzippedNBT, ToBeLengthOf, 0)
-	Expect(t, b.Len(), ToEqual, 0)
+	Expect(t, b.Len(), ToBe, 0)
 }

@@ -60,7 +60,7 @@ func ToReadPacket(buf ReadPacketer, expected interface{}) (string, bool) {
 	if err != nil {
 		return err.Error(), false
 	}
-	return ToDeeplyEqual(v, expected)
+	return ToEqual(v, expected)
 }
 
 ////////////////////////////////////////////////////////////////////////////
@@ -160,16 +160,16 @@ func TestCanNegociateEncryptedConnection(t *testing.T) {
 	// we need to decrypt the fields
 	dVerifyToken, err := rsa.DecryptPKCS1v15(rand.Reader, priv, ekRes.VerifyToken)
 	Expect(t, err, ToBeNil)
-	Expect(t, dVerifyToken, ToDeeplyEqual, verifyToken)
+	Expect(t, dVerifyToken, ToEqual, verifyToken)
 	dSecret, err := rsa.DecryptPKCS1v15(rand.Reader, priv, ekRes.SharedSecret)
 	Expect(t, err, ToBeNil)
-	Expect(t, dSecret, ToDeeplyEqual, secret)
+	Expect(t, dSecret, ToEqual, secret)
 
 	// shouldn't have any extra data
 	Expect(t, rbuf.IsEmpty(), ToBeTrue)
 	Expect(t, wbuf.IsEmpty(), ToBeTrue)
 	// connection should be modified
 	Expect(t, c.IsEncrypted(), ToBeTrue)
-	Expect(t, c.ServerID, ToEqual, "-")
-	Expect(t, c.Encryption.SharedKey, ToDeeplyEqual, secret)
+	Expect(t, c.ServerID, ToBe, "-")
+	Expect(t, c.Encryption.SharedKey, ToEqual, secret)
 }

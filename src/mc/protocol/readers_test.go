@@ -22,12 +22,12 @@ func TestReaderCanDispatchToTypeTable(t *testing.T) {
 	err = r.ReadStruct(&p)
 	Expect(t, err, ToBeNil)
 
-	Expect(t, p.EntityID, ToEqual, int32(13))
-	Expect(t, p.LevelType, ToEqual, "default")
-	Expect(t, p.GameMode, ToEqual, CreativeMode)
-	Expect(t, p.Dimension, ToEqual, NetherDimension)
-	Expect(t, p.Difficulty, ToEqual, NormalDifficulty)
-	Expect(t, p.MaxPlayers, ToEqual, int8(8))
+	Expect(t, p.EntityID, ToBe, int32(13))
+	Expect(t, p.LevelType, ToBe, "default")
+	Expect(t, p.GameMode, ToBe, CreativeMode)
+	Expect(t, p.Dimension, ToBe, NetherDimension)
+	Expect(t, p.Difficulty, ToBe, NormalDifficulty)
+	Expect(t, p.MaxPlayers, ToBe, int8(8))
 }
 
 func TestReaderCanParseDoublesAndBools(t *testing.T) {
@@ -39,11 +39,11 @@ func TestReaderCanParseDoublesAndBools(t *testing.T) {
 	err = r.ReadStruct(&p)
 	Expect(t, err, ToBeNil)
 
-	Expect(t, p.X, ToEqual, float64(13))
-	Expect(t, p.Y, ToEqual, float64(14))
-	Expect(t, p.Stance, ToEqual, float64(1))
-	Expect(t, p.Z, ToEqual, float64(64))
-	Expect(t, p.IsOnGround, ToEqual, true)
+	Expect(t, p.X, ToBe, float64(13))
+	Expect(t, p.Y, ToBe, float64(14))
+	Expect(t, p.Stance, ToBe, float64(1))
+	Expect(t, p.Z, ToBe, float64(64))
+	Expect(t, p.IsOnGround, ToBe, true)
 }
 
 func TestReaderCanParseFloats(t *testing.T) {
@@ -55,9 +55,9 @@ func TestReaderCanParseFloats(t *testing.T) {
 	err = r.ReadStruct(&p)
 	Expect(t, err, ToBeNil)
 
-	Expect(t, p.Health, ToEqual, int16(13))
-	Expect(t, p.Food, ToEqual, int16(14))
-	Expect(t, p.Saturation, ToEqual, float32(3.5))
+	Expect(t, p.Health, ToBe, int16(13))
+	Expect(t, p.Food, ToBe, int16(14))
+	Expect(t, p.Saturation, ToBe, float32(3.5))
 }
 
 /////////////////////////////////////////////////////////////////////
@@ -69,10 +69,10 @@ func TestProtocolHandshakeReader(t *testing.T) {
 	var h Handshake
 	err = r.ReadStruct(&h)
 	Expect(t, err, ToBeNil)
-	Expect(t, h.Version, ToEqual, byte(47))
-	Expect(t, h.Username, ToEqual, "_AlexM")
-	Expect(t, h.Hostname, ToEqual, "localhost")
-	Expect(t, h.Port, ToEqual, int32(25565))
+	Expect(t, h.Version, ToBe, byte(47))
+	Expect(t, h.Username, ToBe, "_AlexM")
+	Expect(t, h.Hostname, ToBe, "localhost")
+	Expect(t, h.Port, ToBe, int32(25565))
 }
 
 func TestProtocolEncryptionKeyResponseReader(t *testing.T) {
@@ -83,8 +83,8 @@ func TestProtocolEncryptionKeyResponseReader(t *testing.T) {
 	var ekr EncryptionKeyResponse
 	err = r.ReadStruct(&ekr)
 	Expect(t, err, ToBeNil)
-	Expect(t, ekr.SharedSecret, ToDeeplyEqual, []byte{1, 3})
-	Expect(t, ekr.VerifyToken, ToDeeplyEqual, []byte{4, 5})
+	Expect(t, ekr.SharedSecret, ToEqual, []byte{1, 3})
+	Expect(t, ekr.VerifyToken, ToEqual, []byte{4, 5})
 }
 
 func TestProtocolEncryptionKeyRequestReader(t *testing.T) {
@@ -95,9 +95,9 @@ func TestProtocolEncryptionKeyRequestReader(t *testing.T) {
 	var ekr EncryptionKeyRequest
 	err = r.ReadStruct(&ekr)
 	Expect(t, err, ToBeNil)
-	Expect(t, ekr.ServerID, ToEqual, "MyServerName")
-	Expect(t, ekr.PublicKey, ToDeeplyEqual, []byte{1, 3})
-	Expect(t, ekr.VerifyToken, ToDeeplyEqual, []byte{4, 5})
+	Expect(t, ekr.ServerID, ToBe, "MyServerName")
+	Expect(t, ekr.PublicKey, ToEqual, []byte{1, 3})
+	Expect(t, ekr.VerifyToken, ToEqual, []byte{4, 5})
 }
 
 func TestReadPacket(t *testing.T) {
@@ -110,7 +110,7 @@ func TestReadPacket(t *testing.T) {
 	ekr, ok := obj.(*EncryptionKeyRequest)
 	fmt.Printf("Type: %#v\n", ekr)
 	Expect(t, ok, ToBeTrue)
-	Expect(t, ekr.ServerID, ToEqual, "MyServerName")
-	Expect(t, ekr.PublicKey, ToDeeplyEqual, []byte{1, 3})
-	Expect(t, ekr.VerifyToken, ToDeeplyEqual, []byte{4, 5})
+	Expect(t, ekr.ServerID, ToBe, "MyServerName")
+	Expect(t, ekr.PublicKey, ToEqual, []byte{1, 3})
+	Expect(t, ekr.VerifyToken, ToEqual, []byte{4, 5})
 }

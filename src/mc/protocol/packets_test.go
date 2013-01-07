@@ -27,7 +27,7 @@ func TestSlotCanReturnReaderOfItsTrueData(t *testing.T) {
 
 	data, err := ioutil.ReadAll(r)
 	Expect(t, err, ToBeNil)
-	Expect(t, data, ToDeeplyEqual, expectedData)
+	Expect(t, data, ToEqual, expectedData)
 }
 
 func TestSlotIsEmptyIfIDIsNegOne(t *testing.T) {

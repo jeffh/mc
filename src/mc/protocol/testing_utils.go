@@ -19,7 +19,7 @@ func ToEqualBytes(b []byte, values ...interface{}) (string, bool) {
 	if err != nil {
 		return err.Error(), false
 	}
-	return describe.ToDeeplyEqual(b, expectedBytes)
+	return describe.ToEqual(b, expectedBytes)
 }
 
 func readBytes(b io.Reader, values ...interface{}) error {

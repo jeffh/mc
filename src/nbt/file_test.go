@@ -33,7 +33,7 @@ func fixtureAsReader(filename string) io.Reader {
 func TestReadingWithNoReaderIsAnError(t *testing.T) {
 	nbt := NewFile(nil)
 	_, err := nbt.Read()
-	Expect(t, err.Error(), ToEqual, "No Reader specified")
+	Expect(t, err.Error(), ToBe, "No Reader specified")
 }
 
 func TestReadingSimpleNBTAsStruct(t *testing.T) {
@@ -49,8 +49,8 @@ func TestReadingSimpleNBTAsStruct(t *testing.T) {
 	nbt := NewFile(reader)
 	err = nbt.ReadInto(&value)
 	Expect(t, err, ToBeNil)
-	Expect(t, value.Name, ToEqual, Name("hello world"))
-	Expect(t, value.TheName, ToEqual, "Bananrama")
+	Expect(t, value.Name, ToBe, Name("hello world"))
+	Expect(t, value.TheName, ToBe, "Bananrama")
 }
 
 func TestReadingSimpleNBT(t *testing.T) {
@@ -61,11 +61,11 @@ func TestReadingSimpleNBT(t *testing.T) {
 	nbt := NewFile(reader)
 	tag, err := nbt.Read()
 	Expect(t, err, ToBeNil)
-	Expect(t, tag, Not(ToEqual), InvalidTag)
+	Expect(t, tag, Not(ToBe), InvalidTag)
 	compound, ok := tag.Value.(Compound)
 	Expect(t, ok, ToBeTrue)
-	Expect(t, tag.Name, ToEqual, "hello world")
-	Expect(t, compound["name"], ToDeeplyEqual, Tag{
+	Expect(t, tag.Name, ToBe, "hello world")
+	Expect(t, compound["name"], ToEqual, Tag{
 		Type:  TagTypeString,
 		Name:  "name",
 		Value: "Bananrama",
@@ -117,19 +117,19 @@ func TestReadIntoFullNBT(t *testing.T) {
 	nbt := NewFile(reader)
 	err = nbt.ReadInto(&data)
 	Expect(t, err, ToBeNil)
-	Expect(t, data.Name, ToEqual, Name("Level"))
-	Expect(t, data.IntTest, ToEqual, int32(2147483647))
-	Expect(t, data.ByteTest, ToEqual, byte(127))
-	Expect(t, data.StringTest, ToEqual, "HELLO WORLD THIS IS A TEST STRING \xc3\x85\xc3\x84\xc3\x96!")
-	Expect(t, data.DoubleTest, ToEqual, float64(0.49312871321823148))
-	Expect(t, data.FloatTest, ToEqual, float32(0.49823147058486938))
-	Expect(t, data.LongTest, ToEqual, int64(9223372036854775807))
-	Expect(t, data.ShortTest, ToEqual, int16(32767))
-	Expect(t, data.ByteArrayTest, ToDeeplyEqual, expectedBytes)
-	Expect(t, data.LongList, ToDeeplyEqual, []int64{11, 12, 13, 14, 15})
-	Expect(t, data.CompoundTest.Egg, ToDeeplyEqual, itemData{"Eggbert", 0.5})
-	Expect(t, data.CompoundTest.Ham, ToDeeplyEqual, itemData{"Hampus", 0.75})
-	Expect(t, data.ListCompound, ToDeeplyEqual, expectedListCompound)
+	Expect(t, data.Name, ToBe, Name("Level"))
+	Expect(t, data.IntTest, ToBe, int32(2147483647))
+	Expect(t, data.ByteTest, ToBe, byte(127))
+	Expect(t, data.StringTest, ToBe, "HELLO WORLD THIS IS A TEST STRING \xc3\x85\xc3\x84\xc3\x96!")
+	Expect(t, data.DoubleTest, ToBe, float64(0.49312871321823148))
+	Expect(t, data.FloatTest, ToBe, float32(0.49823147058486938))
+	Expect(t, data.LongTest, ToBe, int64(9223372036854775807))
+	Expect(t, data.ShortTest, ToBe, int16(32767))
+	Expect(t, data.ByteArrayTest, ToEqual, expectedBytes)
+	Expect(t, data.LongList, ToEqual, []int64{11, 12, 13, 14, 15})
+	Expect(t, data.CompoundTest.Egg, ToEqual, itemData{"Eggbert", 0.5})
+	Expect(t, data.CompoundTest.Ham, ToEqual, itemData{"Hampus", 0.75})
+	Expect(t, data.ListCompound, ToEqual, expectedListCompound)
 }
 
 func TestReadingFullNBT(t *testing.T) {
@@ -193,5 +193,5 @@ func TestReadingFullNBT(t *testing.T) {
 			"shortTest":   {"shortTest", TagTypeShort, int16(32767)},
 		},
 	}
-	Expect(t, tag, ToDeeplyEqual, expectedTag)
+	Expect(t, tag, ToEqual, expectedTag)
 }
