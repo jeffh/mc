@@ -1,0 +1,3 @@
+[submodule "src/github.com/jeffh/goexpect"]
+	path = src/github.com/jeffh/goexpect
+	url = git://github.com/jeffh/goexpect
