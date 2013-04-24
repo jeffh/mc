@@ -15,7 +15,8 @@ func createProtocolReader() (*Reader, *bytes.Buffer) {
 
 func TestReaderCanDispatchToTypeTable(t *testing.T) {
 	r, b := createProtocolReader()
-	err := writeBytes(b, int32(13), "default", CreativeMode, NetherDimension, NormalDifficulty, int8(0), int8(8))
+	err := writeBytes(b, int32(13), "default",
+		GameModeCreative, GameDimensionNether, GameDifficultyNormal, int8(0), int8(8))
 	Expect(t, err, ToBeNil)
 
 	p := LoginRequest{}
@@ -24,9 +25,9 @@ func TestReaderCanDispatchToTypeTable(t *testing.T) {
 
 	Expect(t, p.EntityID, ToBe, int32(13))
 	Expect(t, p.LevelType, ToBe, "default")
-	Expect(t, p.GameMode, ToBe, CreativeMode)
-	Expect(t, p.Dimension, ToBe, NetherDimension)
-	Expect(t, p.Difficulty, ToBe, NormalDifficulty)
+	Expect(t, p.GameMode, ToBe, GameModeCreative)
+	Expect(t, p.Dimension, ToBe, GameDimensionNether)
+	Expect(t, p.Difficulty, ToBe, GameDifficultyNormal)
 	Expect(t, p.MaxPlayers, ToBe, int8(8))
 }
 

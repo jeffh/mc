@@ -43,7 +43,7 @@ func TestSlotIsEmptyIfIDIsNegOne(t *testing.T) {
 }
 
 func TestGameModeSurvival(t *testing.T) {
-	gm := SurvivalMode
+	gm := GameModeSurvival
 	Expect(t, gm.IsSurvival(), ToBeTrue)
 	Expect(t, gm.IsCreative(), Not(ToBeTrue))
 	Expect(t, gm.IsAdventure(), Not(ToBeTrue))
@@ -51,7 +51,7 @@ func TestGameModeSurvival(t *testing.T) {
 }
 
 func TestGameModeCreative(t *testing.T) {
-	gm := CreativeMode
+	gm := GameModeCreative
 	Expect(t, gm.IsSurvival(), Not(ToBeTrue))
 	Expect(t, gm.IsCreative(), ToBeTrue)
 	Expect(t, gm.IsAdventure(), Not(ToBeTrue))
@@ -59,7 +59,7 @@ func TestGameModeCreative(t *testing.T) {
 }
 
 func TestGameModeAdventure(t *testing.T) {
-	gm := AdventureMode
+	gm := GameModeAdventure
 	Expect(t, gm.IsSurvival(), Not(ToBeTrue))
 	Expect(t, gm.IsCreative(), Not(ToBeTrue))
 	Expect(t, gm.IsAdventure(), ToBeTrue)
@@ -67,7 +67,7 @@ func TestGameModeAdventure(t *testing.T) {
 }
 
 func TestGameModeSurvivalFlag(t *testing.T) {
-	gm := GameMode(AdventureMode | HardcoreModeFlag)
+	gm := GameMode(GameModeAdventure | GameModeHardcoreFlag)
 	Expect(t, gm.IsSurvival(), Not(ToBeTrue))
 	Expect(t, gm.IsCreative(), Not(ToBeTrue))
 	Expect(t, gm.IsAdventure(), ToBeTrue)

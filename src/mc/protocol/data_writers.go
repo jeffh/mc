@@ -1,7 +1,6 @@
 package protocol
 
 import (
-	"fmt"
 	"reflect"
 	"unicode/utf16"
 )
@@ -23,6 +22,7 @@ func init() {
 	DefaultDataWriters.Add(true, ProtocolWriteBool) // bool
 	DefaultDataWriters.Add([]byte{}, ProtocolWriteByteSlice)
 
+	DefaultDataWriters.Add([]string{}, ProtocolWriteStringSlice)
 	DefaultDataWriters.Add([]Slot{}, ProtocolWriteSlotSlice)
 	DefaultDataWriters.Add(Slot{}, ProtocolWriteSlot)
 
@@ -92,13 +92,30 @@ func ProtocolWriteSlot(w *Writer, v interface{}) error {
 func ProtocolWriteSlotSlice(w *Writer, v interface{}) error {
 	slots := v.([]Slot)
 	size := int16(len(slots))
-	fmt.Printf("Writing Slot Slice of size: %v\n", size)
 	err := w.WriteValue(size)
 	if err != nil {
 		return err
 	}
 
 	for _, s := range slots {
+		err = w.WriteDispatch(s)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func ProtocolWriteStringSlice(w *Writer, v interface{}) error {
+	strings := v.([]string)
+	size := int16(len(strings))
+
+	err := w.WriteValue(size)
+	if err != nil {
+		return err
+	}
+
+	for _, s := range strings {
 		err = w.WriteDispatch(s)
 		if err != nil {
 			return err
@@ -138,7 +155,6 @@ func ProtocolWriteString(w *Writer, v interface{}) error {
 func ProtocolWriteByteSlice(w *Writer, v interface{}) error {
 	bytes := v.([]byte)
 	size := int16(len(bytes))
-	fmt.Printf("Writing ByteSlice of size: %v\n", size)
 	err := w.WriteValue(size)
 	if err != nil {
 		return err

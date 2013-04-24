@@ -53,8 +53,7 @@ func (r *Reader) UpgradeReader(f ReaderFactory) {
 func (r *Reader) ReadValue(v interface{}) error {
 	err := binary.Read(r.stream, binary.BigEndian, v)
 	// for debugging
-	value := reflect.ValueOf(v).Elem()
-	fmt.Printf("ReadValue: 0x%x\n", value.Interface())
+	//fmt.Printf("ReadValue: 0x%x\n", reflect.ValueOf(v).Elem().Interface())
 	// - end
 	if err != nil {
 		fmt.Printf("Error when reading: %s\n", err)
@@ -148,6 +147,6 @@ func (r *Reader) ReadPacket() (interface{}, error) {
 		return nil, err
 	}
 	err = r.ReadStruct(value)
-	fmt.Printf("-> 0x%x >> %#v\n", pt, value)
+	fmt.Printf("S->C 0x%x >> %#v\n", pt, value)
 	return value, err
 }

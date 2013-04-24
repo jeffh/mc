@@ -33,6 +33,26 @@ func TestProtocolEntityMetadataSliceWriter(t *testing.T) {
 		byte(127))
 }
 
+func TestProtocolStringSliceWriter(t *testing.T) {
+	w, b := createProtocolWriter()
+	strings := []string{"John", "Doe"}
+
+	err := ProtocolWriteStringSlice(w, strings)
+	Expect(t, err, ToBeNil)
+
+	var size int16
+	err = readBytes(b, &size)
+	Expect(t, err, ToBeNil)
+	Expect(t, size, ToEqual, int16(2))
+
+	for _, s := range strings {
+		var str string
+		err = readBytes(b, &str)
+		Expect(t, err, ToBeNil)
+		Expect(t, str, ToEqual, s)
+	}
+}
+
 func TestProtocolEntityMetadataEmptySliceWriter(t *testing.T) {
 	w, b := createProtocolWriter()
 	metadata := []EntityMetadata{}

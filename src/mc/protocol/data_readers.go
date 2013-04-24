@@ -23,6 +23,7 @@ func init() {
 
 	// there are more packets that use (len int16, []byte), so this is default
 	// method of parsing unless custom parsers are available for each
+	DefaultDataReaders.Add([]string{}, ProtocolReadStringSlice)
 	DefaultDataReaders.Add([]byte{}, ProtocolReadByteSlice)
 	DefaultDataReaders.Add([]Slot{}, ProtocolReadSlotSlice)
 	DefaultDataReaders.Add(Slot{}, ProtocolReadSlot)
@@ -32,24 +33,26 @@ func init() {
 //////////////////////////////////////////////////////////
 
 func ProtocolReadInt32PrefixedBytes(r *Reader) (v interface{}, err error) {
-
 	var size int32
 	err = r.ReadDispatch(&size)
 	if err != nil {
 		return
 	}
 
-	bytes := make(Int32PrefixedBytes, size)
-	for i := int32(0); i < size; i++ {
-		var byt byte
-		err = r.ReadDispatch(&byt)
-		if err != nil {
-			return
-		}
-		bytes[i] = byt
+	v = make(Int32PrefixedBytes, size)
+	r.ReadSlice(&v)
+	return
+}
+
+func ProtocolReadStringSlice(r *Reader) (v interface{}, err error) {
+	var size int16
+	err = r.ReadValue(&size)
+	if err != nil {
+		return
 	}
 
-	v = bytes
+	v = make([]string, size)
+	err = r.ReadSlice(&v)
 	return
 }
 
@@ -116,7 +119,7 @@ func ProtocolReadEntityMetadataSlice(r *Reader) (v interface{}, err error) {
 }
 
 func ProtocolReadSlotSlice(r *Reader) (v interface{}, err error) {
-	var size uint16
+	var size int16
 	err = r.ReadValue(&size)
 	if err != nil {
 		return
@@ -127,7 +130,7 @@ func ProtocolReadSlotSlice(r *Reader) (v interface{}, err error) {
 }
 
 func ProtocolReadByteSlice(r *Reader) (v interface{}, err error) {
-	var size uint16
+	var size int16
 	err = r.ReadValue(&size)
 	if err != nil {
 		return
@@ -145,16 +148,15 @@ func ProtocolReadBool(r *Reader) (v interface{}, err error) {
 }
 
 func ProtocolReadString(r *Reader) (v interface{}, err error) {
-	var size, ch uint16
+	var size int16
+	var ch uint16
 	raw := make([]uint16, 0)
 	err = r.ReadValue(&size)
 	if err != nil {
 		return
 	}
 
-	fmt.Printf("String Size: %v\n", size)
-
-	for j := uint16(0); j < size; j++ {
+	for j := int16(0); j < size; j++ {
 		err = r.ReadValue(&ch)
 		if err != nil {
 			return
@@ -164,7 +166,6 @@ func ProtocolReadString(r *Reader) (v interface{}, err error) {
 	}
 
 	v = string(utf16.Decode(raw))
-	fmt.Printf("String Decoded: %#v\n", v)
 	return
 }
 

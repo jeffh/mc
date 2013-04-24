@@ -47,7 +47,7 @@ func (w *Writer) UpgradeWriter(f WriterFactory) {
 // Writes a fixed-size go type to the stream.
 func (w *Writer) WriteValue(v interface{}) error {
 	err := binary.Write(w.stream, binary.BigEndian, v)
-	fmt.Printf("WriteValue: 0x%x\n", v)
+	//fmt.Printf("WriteValue: 0x%x\n", v)
 	if err != nil {
 		fmt.Printf("Error when writing %#v: %s\n", v, err)
 	}
@@ -100,13 +100,11 @@ func (w *Writer) WriteStruct(v interface{}) (err error) {
 // writing the proper packet type prefix before writing the struct
 // provided.
 func (w *Writer) WritePacket(v interface{}) error {
+	fmt.Printf("C->S %#v\n", v)
 	pt, err := w.mapper.GetPacketType(v)
 	if err != nil {
 		return err
 	}
 	w.WriteValue(pt)
-	defer func() {
-		fmt.Printf("<- %#v\n", v)
-	}()
 	return w.WriteStruct(v)
 }

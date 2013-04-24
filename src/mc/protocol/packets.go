@@ -7,7 +7,7 @@ import (
 )
 
 // protocol version supported
-const Version = 49
+const Version = 60
 
 ///////////////////////////////////////////////////////
 
@@ -85,6 +85,10 @@ func init() {
 	basePacketMapper.Define(0xCB, TabComplete{})
 	basePacketMapper.Define(0xCC, ClientSettings{})
 	basePacketMapper.Define(0xCD, ClientStatus{})
+	basePacketMapper.Define(0xCE, ScoreboardObjective{})
+	basePacketMapper.Define(0xCF, UpdateScore{})
+	basePacketMapper.Define(0xD0, DisplayScoreboard{})
+	basePacketMapper.Define(0xD1, Teams{})
 	basePacketMapper.Define(0xFA, PluginMessage{})
 	basePacketMapper.Define(0xFC, EncryptionKeyResponse{})
 	basePacketMapper.Define(0xFD, EncryptionKeyRequest{})
@@ -251,7 +255,7 @@ type SpawnMob struct {
 	X, Y, Z                         int32
 	Yaw, Pitch, HeadYaw             int8
 	ZVelocity, XVelocity, YVelocity int16
-	Metadata                        []EntityMetadata
+	Metadata                        EntityMetadata
 }
 type SpawnPainting struct {
 	EntityID           int32
@@ -305,7 +309,7 @@ type AttachEntity struct {
 }
 type SetEntityMetadata struct {
 	EntityID int32
-	Metadata []EntityMetadata
+	Metadata EntityMetadata
 }
 type EntityEffect struct {
 	EntityID  int32
@@ -357,7 +361,7 @@ type BlockBreakAnimation struct {
 type MapChunkBulk struct {
 	Count          int16
 	CompressedData []byte // compressed
-	Metadata       []ChunkBulkMetadata
+	Metadata       ChunkBulkMetadata
 }
 type Explosion struct {
 	X, Y, Z                                           float64
@@ -412,7 +416,6 @@ type SetSlot struct {
 }
 type SetWindowItems struct {
 	WindowID int8
-	Count    int16
 	Slots    []Slot
 }
 type UpdateWindowProperty struct {
@@ -495,6 +498,33 @@ type ServerListPing struct {
 }
 type Disconnect struct {
 	Reason string
+}
+
+type ScoreboardObjective struct {
+	Name  string
+	Value string
+	Type  ScoreboardType
+}
+
+type UpdateScore struct {
+	ItemName  string
+	Type      ScoreType
+	ScoreName string // only sent if not removing
+	Value     int32  // only sent if not removing
+}
+
+type DisplayScoreboard struct {
+	Position ScoreboardPosition
+	Name     string
+}
+
+type Teams struct {
+	ID           string
+	Type         TeamType
+	Name         string               // only for create or update
+	Prefix       string               // only for create or update
+	FriendlyFire TeamFriendlyFireType // only for create or update
+	PlayersDelta []string             // only for create or add/remove players
 }
 
 ///////////////////////////////////////////////////////
@@ -606,112 +636,112 @@ const (
 type GameState int8
 
 const (
-	InvalidBedState GameState = iota
-	BeginRainState
-	EndRainState
-	ChangeGameModeState
-	EnterCredits
+	GameStateInvalidBed GameState = iota
+	GameStateBeginRain
+	GameStateEndRain
+	GameStateChangeGameMode
+	GameStateEnterCredits
 )
 
 type EntityStatusType int8
 
 const (
-	HurtStatusType         EntityStatusType = 2
-	DeadStatusType                          = 3
-	TamingStatusType                        = 6
-	TamedStatusType                         = 7
-	ShakingWaterStatusType                  = 8
-	EatingStatusType                        = 9
-	EatingGrassStatusType                   = 10
+	EntityStatusHurt         EntityStatusType = 2
+	EntityStatusDead                          = 3
+	EntityStatusTaming                        = 6
+	EntityStatusTamed                         = 7
+	EntityStatusShakingWater                  = 8
+	EntityStatusEating                        = 9
+	EntityStatusEatingGrass                   = 10
 )
 
 type MobType int8
 
 const (
-	CreeperMobType      MobType = 50
-	SkeletonMobType             = 51
-	SpiderMobType               = 52
-	GiantZombieMobType          = 53
-	ZombieMobType               = 54
-	SlimeMobType                = 55
-	GhastMobType                = 56
-	ZombiePigmanMobType         = 57
-	EntermanMobType             = 58
-	CaveSpiderMobType           = 59
-	SilverFishMobType           = 60
-	BlazeMobType                = 61
-	MagmaCubeMobType            = 62
-	EnderDragonMobType          = 63
-	WitherMobType               = 64
-	BatMobType                  = 65
-	WitchMobType                = 66
-	PigMobType                  = 90
-	SheepMobType                = 91
-	CowMobType                  = 92
-	ChickenMobType              = 93
-	SquidMobType                = 94
-	WolfMobType                 = 95
-	MooshroomMobType            = 96
-	SnowmanMobType              = 97
-	OcelotMobType               = 98
-	IronGolemMobType            = 99
-	VillagerMobType             = 120
+	MobCreeper      MobType = 50
+	MobSkeleton             = 51
+	MobSpider               = 52
+	MobGiantZombie          = 53
+	MobZombie               = 54
+	MobSlime                = 55
+	MobGhast                = 56
+	MobZombiePigman         = 57
+	MobEnterman             = 58
+	MobCaveSpider           = 59
+	MobSilverFish           = 60
+	MobBlaze                = 61
+	MobMagmaCube            = 62
+	MobEnderDragon          = 63
+	MobWither               = 64
+	MobBat                  = 65
+	MobWitch                = 66
+	MobPig                  = 90
+	MobSheep                = 91
+	MobCow                  = 92
+	MobChicken              = 93
+	MobSquid                = 94
+	MobWolf                 = 95
+	MobMooshroom            = 96
+	MobSnowman              = 97
+	MobOcelot               = 98
+	MobIronGolem            = 99
+	MobVillager             = 120
 )
 
 type EntityType int8
 
 const (
-	BoatEntityType             EntityType = 1
-	MinecartEntityType                    = 10
-	MinecartStorageEntityType             = 11
-	MinecartPoweredEntityType             = 12
-	ActiveTNTEntityType                   = 50
-	EnderCrystalEntityType                = 51
-	ArrowEntityType                       = 60
-	SnowballEntityType                    = 61
-	EggEntityType                         = 62
-	EnderpearlEntityType                  = 65
-	WitherSkullEntityType                 = 66
-	FallingObjectEntityType               = 70
-	EyeOfEnderEntityType                  = 72
-	ThrownPotionEntityType                = 73
-	FallingDragonEggEntityType            = 74
-	ThrownExpBottleEntityType             = 75
-	FishingFloatEntityType                = 90
+	EntityBoat             EntityType = 1
+	EntityMinecart                    = 10
+	EntityMinecartStorage             = 11
+	EntityMinecartPowered             = 12
+	EntityActiveTNT                   = 50
+	EntityEnderCrystal                = 51
+	EntityArrow                       = 60
+	EntitySnowball                    = 61
+	EntityEgg                         = 62
+	EntityEnderpearl                  = 65
+	EntityWitherSkull                 = 66
+	EntityFallingObject               = 70
+	EntityEyeOfEnder                  = 72
+	EntityThrownPotion                = 73
+	EntityFallingDragonEgg            = 74
+	EntityThrownExpBottle             = 75
+	EntityFishingFloat                = 90
 )
 
 type ActionType int8
 
 const (
-	CrouchAction ActionType = iota
-	UncrouchAction
-	LeaveBedAction
-	StartSprintingAction
-	StopSprintingAction
+	ActionCrouch ActionType = iota
+	ActionUncrouch
+	ActionLeaveBed
+	ActionStartSprinting
+	ActionStopSprinting
 )
 
 type AnimationType int8
 
 const (
-	NoAnimation       AnimationType = 0
-	SwingArmAnimation               = 1 // only clients send this
-	DamageAnimation                 = 2 // only server sends this
-	LeaveBedAnimation               = 3
-	EatFoodAnimation                = 5
-	UnknownAnimation                = 102
-	CrouchAnimation                 = 104
-	UncrouchAnimation               = 105
+	AnimationNone     AnimationType = 0
+	AnimationSwingArm               = 1 // only clients send this
+	AnimationDamage                 = 2 // only server sends this
+	AnimationLeaveBed               = 3
+	AnimationEatFood                = 5
+	AnimationUnknown                = 102
+	AnimationCrouch                 = 104
+	AnimationUncrouch               = 105
 )
 
 type Face int8
 
 const (
-	YNeg Face = iota
-	YPos
-	ZNeg
-	ZPos
-	XNeg
-	XPos
+	FaceYNeg Face = iota
+	FaceYPos
+	FaceZNeg
+	FaceZPos
+	FaceXNeg
+	FaceXPos
 )
 
 type PlayerDiggingStatus int8
@@ -728,59 +758,104 @@ const (
 type MouseButton int8
 
 const (
-	LeftMouseButton MouseButton = iota
-	RightMouseButton
-	ShiftButton
-	MiddleMouseButton
+	ButtonLeftMouse MouseButton = iota
+	ButtonRightMouse
+	ButtonShift
+	ButtonMiddleMouse
 )
 
 type GameDifficulty uint8
 
 const (
-	PeacefulDifficulty GameDifficulty = iota
-	EasyDifficulty
-	NormalDifficulty
-	HardDifficulty
+	GameDifficultyPeaceful GameDifficulty = iota
+	GameDifficultyEasy
+	GameDifficultyNormal
+	GameDifficultyHard
 )
 
 ///////////////////////////////////////////////////////
 
 type GameDimension int8
 
-func (d *GameDimension) IsNether() bool    { return *d == NetherDimension }
-func (d *GameDimension) IsOverworld() bool { return *d == OverworldDimension }
-func (d *GameDimension) IsEnd() bool       { return *d == EndDimension }
+func (d *GameDimension) IsNether() bool    { return *d == GameDimensionNether }
+func (d *GameDimension) IsOverworld() bool { return *d == GameDimensionOverworld }
+func (d *GameDimension) IsEnd() bool       { return *d == GameDimensionEnd }
 
 const (
-	NetherDimension GameDimension = iota - 1
-	OverworldDimension
-	EndDimension
+	GameDimensionNether GameDimension = iota - 1
+	GameDimensionOverworld
+	GameDimensionEnd
 )
 
 ///////////////////////////////////////////////////////
 
 type GameMode int8
 
-func (m *GameMode) IsSurvival() bool  { return *m&GameModeFlag == SurvivalMode }
-func (m *GameMode) IsCreative() bool  { return *m&GameModeFlag == CreativeMode }
-func (m *GameMode) IsAdventure() bool { return *m&GameModeFlag == AdventureMode }
-func (m *GameMode) IsHardcore() bool  { return *m&HardcoreModeFlag > 0 }
+func (m *GameMode) IsSurvival() bool  { return *m&GameModeFlag == GameModeSurvival }
+func (m *GameMode) IsCreative() bool  { return *m&GameModeFlag == GameModeCreative }
+func (m *GameMode) IsAdventure() bool { return *m&GameModeFlag == GameModeAdventure }
+func (m *GameMode) IsHardcore() bool  { return *m&GameModeHardcoreFlag > 0 }
 func (m *GameMode) Name() string {
 	switch *m {
-	case SurvivalMode:
+	case GameModeSurvival:
 		return "Survival"
-	case CreativeMode:
+	case GameModeCreative:
 		return "Creative"
-	case AdventureMode:
+	case GameModeAdventure:
 		return "Adventure"
 	}
 	return "Unknown"
 }
 
 const (
-	SurvivalMode GameMode = iota
-	CreativeMode
-	AdventureMode
-	GameModeFlag     = 0x3
-	HardcoreModeFlag = 0x8
+	GameModeSurvival GameMode = iota
+	GameModeCreative
+	GameModeAdventure
+	GameModeFlag         = 0x3
+	GameModeHardcoreFlag = 0x8
+)
+
+///////////////////////////////////////////////////////
+
+type ScoreboardType byte
+
+const (
+	ScoreboardTypeCreate ScoreboardType = iota
+	ScoreboardTypeDelete
+	ScoreboardTypeUpdate
+)
+
+type ScoreType byte
+
+const (
+	ScoreTypeCreateOrUpdate ScoreType = iota
+	ScoreTypeDelete
+)
+
+type ScoreboardPosition byte
+
+const (
+	ScoreboardPositionList ScoreboardPosition = iota
+	ScoreboardPositionSidebar
+	ScoreboardPositionBelowName
+)
+
+///////////////////////////////////////////////////////
+
+type TeamType byte
+
+const (
+	TeamCreate TeamType = iota
+	TeamDelete
+	TeamUpdate
+	TeamPlayerAdd
+	TeamPlayerDelete
+)
+
+type TeamFriendlyFireType byte
+
+const (
+	TeamFriendlyFireOff TeamFriendlyFireType = iota
+	TeamFriendlyFireOn
+	TeamFriendlyFireShowFriendlyInvisible = 3
 )

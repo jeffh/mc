@@ -75,11 +75,23 @@ func TestProtocolStringReader(t *testing.T) {
 	Expect(t, b.Len(), ToBe, 0)
 }
 
+func TestProtocolStringSliceReader(t *testing.T) {
+	r, b := createProtocolReader()
+	err := writeBytes(b, int16(2), "John", "Doe")
+	Expect(t, err, ToBeNil)
+
+	v, err := ProtocolReadStringSlice(r)
+	Expect(t, err, ToBeNil)
+	names, ok := v.([]string)
+	Expect(t, ok, ToBeTrue)
+	Expect(t, names, ToEqual, []string{"John", "Doe"})
+}
+
 func TestProtocolSlotSliceReader(t *testing.T) {
 	r, b := createProtocolReader()
 	// last two int8s are just arbitrary binary bits for now
 	// ID, Count, Damage, DataSize, Gzipped Data...
-	err := writeBytes(b, uint16(1), int16(2), int8(100), int16(99), int16(2), int8(2), int8(3))
+	err := writeBytes(b, int16(1), int16(2), int8(100), int16(99), int16(2), int8(2), int8(3))
 	Expect(t, err, ToBeNil)
 
 	v, err := ProtocolReadSlotSlice(r)
