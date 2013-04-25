@@ -2,6 +2,7 @@ package mc
 
 import (
 	"bytes"
+	"testing"
 )
 
 type ClosableBuffer struct {
@@ -22,6 +23,12 @@ func (b *ClosableBuffer) Close() error {
 
 func createClient() (*Client, *ClosableBuffer) {
 	buf := newClosableBuffer()
-	c := NewClient(buf, nil)
+	c := NewClient(buf, 50, nil)
 	return c, buf
+}
+
+//////////////////////////////////////////////////////////////
+
+func TestClientCanHandshake(t *testing.T) {
+	// client, buf := createClient()
 }

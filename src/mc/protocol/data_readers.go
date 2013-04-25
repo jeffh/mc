@@ -7,12 +7,15 @@ import (
 )
 
 type DataReader func(r *Reader) (interface{}, error)
+
 type DataReaders map[reflect.Type]DataReader
 
 func (r *DataReaders) Add(t interface{}, reader DataReader) {
 	(*r)[reflect.TypeOf(t)] = reader
 }
 
+// The default custom data readers for reading custom types
+// from an io.Reader
 var DefaultDataReaders = make(DataReaders)
 
 func init() {
@@ -28,10 +31,30 @@ func init() {
 	DefaultDataReaders.Add([]Slot{}, ProtocolReadSlotSlice)
 	DefaultDataReaders.Add(Slot{}, ProtocolReadSlot)
 	DefaultDataReaders.Add(Int32PrefixedBytes{}, ProtocolReadInt32PrefixedBytes)
+
+	DefaultDataReaders.Add([]EntityMetadata{}, ProtocolReadEntityMetadataSlice)
+	DefaultDataReaders.Add(DestroyEntity{}, ProtocolReadDestroyEntity) //needs test
+	DefaultDataReaders.Add(MapChunkBulk{}, ProtocolReadMapChunkBulk)   //needs test
 }
 
 //////////////////////////////////////////////////////////
 
+func ProtocolReadDestroyEntity(r *Reader) (v interface{}, err error) {
+	var destroyEntity DestroyEntity
+	var size byte
+	err = r.ReadValue(&size)
+	if err != nil {
+		return
+	}
+
+	destroyEntity.EntityIDs = make([]int32, size)
+	err = r.ReadSlice(&destroyEntity.EntityIDs)
+	v = destroyEntity
+	return
+}
+
+// Handles the reading an array of bytes, prefixed by a signed 32-bit
+// integer from a given Reader.
 func ProtocolReadInt32PrefixedBytes(r *Reader) (v interface{}, err error) {
 	var size int32
 	err = r.ReadDispatch(&size)
@@ -40,10 +63,12 @@ func ProtocolReadInt32PrefixedBytes(r *Reader) (v interface{}, err error) {
 	}
 
 	v = make(Int32PrefixedBytes, size)
-	r.ReadSlice(&v)
+	err = r.ReadSlice(&v)
 	return
 }
 
+// Handles reading an array of strings, prefixed by a signed short
+// from a given reader.
 func ProtocolReadStringSlice(r *Reader) (v interface{}, err error) {
 	var size int16
 	err = r.ReadValue(&size)
@@ -53,6 +78,37 @@ func ProtocolReadStringSlice(r *Reader) (v interface{}, err error) {
 
 	v = make([]string, size)
 	err = r.ReadSlice(&v)
+	return
+}
+
+func ProtocolReadMapChunkBulk(r *Reader) (v interface{}, err error) {
+	var chunk MapChunkBulk
+	var countSize int16
+	err = r.ReadValue(&countSize)
+	if err != nil {
+		return
+	}
+
+	var dataSize int32
+	err = r.ReadValue(&dataSize)
+	if err != nil {
+		return
+	}
+
+	err = r.ReadDispatch(&chunk.SkylightSent)
+	if err != nil {
+		return
+	}
+
+	chunk.CompressedData = make([]byte, dataSize)
+	err = r.ReadSlice(&chunk.CompressedData)
+	if err != nil {
+		return
+	}
+
+	chunk.Metadatas = make([]ChunkBulkMetadata, countSize)
+	err = r.ReadSlice(&chunk.Metadatas)
+	v = chunk
 	return
 }
 
@@ -141,9 +197,9 @@ func ProtocolReadByteSlice(r *Reader) (v interface{}, err error) {
 }
 
 func ProtocolReadBool(r *Reader) (v interface{}, err error) {
-	var value int8
+	var value byte
 	err = r.ReadValue(&value)
-	v = (value > int8(0))
+	v = (value > byte(0))
 	return
 }
 
@@ -197,14 +253,11 @@ func ProtocolReadSlot(r *Reader) (v interface{}, err error) {
 		return
 	}
 
-	s.GzippedNBT = make([]byte, 0)
-	for i := int16(0); i < size; i++ {
-		var value byte
-		err = r.ReadValue(&value)
-		if err != nil {
-			return
-		}
-		s.GzippedNBT = append(s.GzippedNBT, value)
+	if size < 0 {
+		size = 0
 	}
+
+	s.GzippedNBT = make([]byte, size)
+	err = r.ReadSlice(&s.GzippedNBT)
 	return
 }

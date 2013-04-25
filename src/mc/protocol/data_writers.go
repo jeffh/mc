@@ -13,6 +13,8 @@ func (w *DataWriters) Add(t interface{}, writer DataWriter) {
 	(*w)[reflect.TypeOf(t)] = writer
 }
 
+// The default custom data writers for writing custom types
+// from an io.Reader
 var DefaultDataWriters = make(DataWriters)
 
 func init() {
@@ -22,6 +24,7 @@ func init() {
 	DefaultDataWriters.Add(true, ProtocolWriteBool) // bool
 	DefaultDataWriters.Add([]byte{}, ProtocolWriteByteSlice)
 
+	// DefaultDataReaders.Add(MapChunkBulk{}, ProtocolWriteMapChunkBulk)
 	DefaultDataWriters.Add([]string{}, ProtocolWriteStringSlice)
 	DefaultDataWriters.Add([]Slot{}, ProtocolWriteSlotSlice)
 	DefaultDataWriters.Add(Slot{}, ProtocolWriteSlot)

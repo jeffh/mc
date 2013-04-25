@@ -6,8 +6,7 @@ import (
 	"io"
 )
 
-// protocol version supported
-const Version = 60
+const Version = 60 // minecraft protocol version supported
 
 ///////////////////////////////////////////////////////
 
@@ -59,6 +58,7 @@ func init() {
 	basePacketMapper.Define(0x2B, SetExperience{})
 	basePacketMapper.Define(0x33, ChunkData{})
 	basePacketMapper.Define(0x34, MultiBlockChange{})
+	basePacketMapper.Define(0x35, BlockChange{})
 	basePacketMapper.Define(0x36, BlockAction{})
 	basePacketMapper.Define(0x37, BlockBreakAnimation{})
 	basePacketMapper.Define(0x38, MapChunkBulk{})
@@ -134,7 +134,7 @@ type Handshake struct {
 	Port     int32
 }
 type ChatMessage struct {
-	Message string
+	Message string // clients are limited to max of 100 characters
 }
 type TimeUpdate struct {
 	WorldAge  int64
@@ -178,15 +178,42 @@ type PlayerLook struct {
 
 // it's slightly different based on who's sending it.
 // see http://www.wiki.vg/Protocol#Player_Position_and_Look_.280x0D.29
-type PlayerPositionLookForServer struct {
+type PlayerPositionLookForServer struct { // client -> server
 	X, Y, Stance, Z float64
 	Yaw, Pitch      float32
 	IsOnGround      bool
 }
-type PlayerPositionLookForClient struct {
+
+// Converts this packet to the appropriate packet for sending to the Client.
+func (p *PlayerPositionLookForServer) PacketForClient() *PlayerPositionLookForClient {
+	return &PlayerPositionLookForClient{
+		X:          p.X,
+		Y:          p.Y,
+		Stance:     p.Stance,
+		Z:          p.Z,
+		Yaw:        p.Yaw,
+		Pitch:      p.Pitch,
+		IsOnGround: p.IsOnGround,
+	}
+}
+
+type PlayerPositionLookForClient struct { // server -> client
 	X, Stance, Y, Z float64
 	Yaw, Pitch      float32
 	IsOnGround      bool
+}
+
+// Converts this packet to the appropriate packet for sending to the Server.
+func (p *PlayerPositionLookForClient) PacketForServer() *PlayerPositionLookForServer {
+	return &PlayerPositionLookForServer{
+		X:          p.X,
+		Y:          p.Y,
+		Stance:     p.Stance,
+		Z:          p.Z,
+		Yaw:        p.Yaw,
+		Pitch:      p.Pitch,
+		IsOnGround: p.IsOnGround,
+	}
 }
 
 type PlayerDigging struct {
@@ -253,9 +280,9 @@ type SpawnMob struct {
 	EntityID                        int32
 	Type                            MobType
 	X, Y, Z                         int32
-	Yaw, Pitch, HeadYaw             int8
-	ZVelocity, XVelocity, YVelocity int16
-	Metadata                        EntityMetadata
+	Pitch, HeadPitch, Yaw           int8
+	XVelocity, YVelocity, ZVelocity int16
+	Metadata                        []EntityMetadata
 }
 type SpawnPainting struct {
 	EntityID           int32
@@ -297,7 +324,7 @@ type EntityTeleport struct {
 }
 type EntityHeadLook struct {
 	EntityID int32
-	HeadYaw  int8
+	HeadYaw  byte
 }
 type EntityStatus struct {
 	EntityID int32
@@ -309,7 +336,7 @@ type AttachEntity struct {
 }
 type SetEntityMetadata struct {
 	EntityID int32
-	Metadata EntityMetadata
+	Metadata []EntityMetadata
 }
 type EntityEffect struct {
 	EntityID  int32
@@ -323,14 +350,14 @@ type RemoveEntityEffect struct {
 }
 type SetExperience struct {
 	Percent float32
-	Level   int8
-	Total   int8
+	Level   int16
+	Total   int16
 }
 type ChunkData struct {
 	X, Y                 int32
 	IsGroundUpContinuous bool
-	PrimaryBitMap        uint16
-	AddBitMap            uint16
+	PrimaryBitMap        int16
+	AddBitMap            int16
 	ZlibData             Int32PrefixedBytes // compressed via zlib; see http://www.wiki.vg/Map_Format
 }
 type MultiBlockChange struct {
@@ -359,9 +386,9 @@ type BlockBreakAnimation struct {
 	DestroyStage int8
 }
 type MapChunkBulk struct {
-	Count          int16
+	SkylightSent   bool
 	CompressedData []byte // compressed
-	Metadata       ChunkBulkMetadata
+	Metadatas      []ChunkBulkMetadata
 }
 type Explosion struct {
 	X, Y, Z                                           float64
@@ -450,7 +477,7 @@ type UpdateTileEntity struct {
 	X       int32
 	Y       int16
 	Z       int32
-	Action  int8
+	Action  byte
 	NBTData []byte
 }
 type IncrementStatistic struct {
@@ -547,6 +574,8 @@ type Slot struct {
 	GzippedNBT []byte
 }
 
+// EmptySlot represents a special instance of the Slot type that indicates
+// a slot with no items.
 var EmptySlot = Slot{ID: -1}
 
 func (s *Slot) IsEmpty() bool {
@@ -643,7 +672,7 @@ const (
 	GameStateEnterCredits
 )
 
-type EntityStatusType int8
+type EntityStatusType byte
 
 const (
 	EntityStatusHurt         EntityStatusType = 2

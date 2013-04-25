@@ -13,6 +13,8 @@ type NewPacketStructer interface {
 
 ////////////////////////////////////////////////
 
+// Reader is the core type to parsing bytes from an io.Reader.
+// It is pluggable to support parsing arbitrary types.
 type Reader struct {
 	stream  io.Reader
 	readers DataReaders
@@ -20,12 +22,25 @@ type Reader struct {
 	Logger  Logger
 }
 
+// Creates a new Reader for the given io.Reader.
+//
+// Readers are the core for parsing bytes in the minecraft protocol.
+// It uses a NewPackerStructer to determine the packet type (from the opcode),
+// then utilizes the DataReaders to parse the appropriate packet.
+//
+// The Reader can accept a logger to use debugging internals.
+//
+// The last two arguments are optional, passing nil will use their default values:
+// DefaultDataReaders and NullLogger.
 func NewReader(stream io.Reader, m NewPacketStructer, r DataReaders, l Logger) *Reader {
 	if r == nil {
 		r = DefaultDataReaders
 	}
 	if m == nil {
 		panic(fmt.Errorf("I got a null NewPacketStructer: %#v", m))
+	}
+	if l == nil {
+		l = &NullLogger{}
 	}
 	return &Reader{
 		stream:  stream,
@@ -43,7 +58,7 @@ func NewReader(stream io.Reader, m NewPacketStructer, r DataReaders, l Logger) *
 func (r *Reader) UpgradeReader(f ReaderFactory) {
 	old := r.stream
 	r.stream = f(r.stream)
-	fmt.Printf("Upgrading reader: %#v -> %#v\n", old, r.stream)
+	r.Logger.Printf("Upgrading reader: %#v -> %#v\n", old, r.stream)
 }
 
 // Reads a given fixed-size go type and reads it in BigEndian form straight
@@ -56,7 +71,7 @@ func (r *Reader) ReadValue(v interface{}) error {
 	//fmt.Printf("ReadValue: 0x%x\n", reflect.ValueOf(v).Elem().Interface())
 	// - end
 	if err != nil {
-		fmt.Printf("Error when reading: %s\n", err)
+		r.Logger.Printf("Error when reading: %s\n", err)
 	}
 	return err
 }
@@ -143,10 +158,11 @@ func (r *Reader) ReadPacket() (interface{}, error) {
 		return nil, err
 	}
 	value, err := r.mapper.NewPacketStruct(pt)
+	r.Logger.Printf("S->C 0x%x\n", pt)
 	if err != nil {
 		return nil, err
 	}
-	err = r.ReadStruct(value)
-	fmt.Printf("S->C 0x%x >> %#v\n", pt, value)
+	err = r.ReadDispatch(value)
+	r.Logger.Printf("      >> %#v\n", value)
 	return value, err
 }

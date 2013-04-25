@@ -64,6 +64,35 @@ func TestProtocolEntityMetadataSliceReaderShouldStopOn127Byte(t *testing.T) {
 	Expect(t, b.Len(), ToBe, 0)
 }
 
+func TestProtocolMapChunkBulkReader(t *testing.T) {
+	r, b := createProtocolReader()
+	err := writeBytes(b,
+		int16(2),   // count
+		int32(1),   // data size
+		byte(1),    // skylight sent
+		byte(1),    // data
+		int32(10),  // (0) metadata.X
+		int32(11),  // (0) metadata.Z
+		uint16(15), // (0) metadata.PrimaryBitmap
+		uint16(16), // (0) metadata.AddBitmap
+		int32(12),  // (1) metadata.X
+		int32(13),  // (1) metadata.Z
+		uint16(17), // (1) metadata.PrimaryBitmap
+		uint16(18), // (1) metadata.AddBitmap
+	)
+	Expect(t, err, ToBeNil)
+
+	v, err := ProtocolReadMapChunkBulk(r)
+	Expect(t, err, ToBeNil)
+	chunk := v.(MapChunkBulk)
+	Expect(t, chunk.CompressedData, ToEqual, []byte{1})
+	Expect(t, chunk.SkylightSent, ToBeTrue)
+	Expect(t, chunk.Metadatas, ToEqual, []ChunkBulkMetadata{
+		{10, 11, 15, 16},
+		{12, 13, 17, 18},
+	})
+}
+
 func TestProtocolStringReader(t *testing.T) {
 	r, b := createProtocolReader()
 	err := writeBytes(b, "hello world")

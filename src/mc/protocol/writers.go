@@ -13,6 +13,8 @@ type GetPacketTyper interface {
 
 ////////////////////////////////////////////////
 
+// The Writer is the core type to serialize packets into a io.Writer.
+// It is pluggable to support serializing arbitrary types.
 type Writer struct {
 	stream  io.Writer
 	writers DataWriters
@@ -20,12 +22,25 @@ type Writer struct {
 	Logger  Logger
 }
 
+// Creates a new writer that can write packets into the given io.Writer.
+//
+// Writers are the core for parsing bytes in the minecraft protocol.
+// It uses a GetPacketTyper to determine the opcode (from the Packet struct),
+// then utilizes the DataWriters to parse the appropriate packet.
+//
+// The Reader can accept a logger to use debugging internals.
+//
+// The last two arguments are optional, passing nil will use their default values:
+// DefaultDataWriters and NullLogger.
 func NewWriter(stream io.Writer, m GetPacketTyper, w DataWriters, l Logger) *Writer {
 	if w == nil {
 		w = DefaultDataWriters
 	}
 	if m == nil {
 		panic(fmt.Errorf("I got a null NewPacketStructer: %#v", m))
+	}
+	if l == nil {
+		l = &NullLogger{}
 	}
 	return &Writer{
 		stream:  stream,
@@ -47,9 +62,8 @@ func (w *Writer) UpgradeWriter(f WriterFactory) {
 // Writes a fixed-size go type to the stream.
 func (w *Writer) WriteValue(v interface{}) error {
 	err := binary.Write(w.stream, binary.BigEndian, v)
-	//fmt.Printf("WriteValue: 0x%x\n", v)
 	if err != nil {
-		fmt.Printf("Error when writing %#v: %s\n", v, err)
+		w.Logger.Printf("Error when writing %#v: %s\n", v, err)
 	}
 	return err
 }
@@ -100,7 +114,7 @@ func (w *Writer) WriteStruct(v interface{}) (err error) {
 // writing the proper packet type prefix before writing the struct
 // provided.
 func (w *Writer) WritePacket(v interface{}) error {
-	fmt.Printf("C->S %#v\n", v)
+	w.Logger.Printf("C->S %#v\n", v)
 	pt, err := w.mapper.GetPacketType(v)
 	if err != nil {
 		return err

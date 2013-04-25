@@ -9,7 +9,7 @@ import (
 	"unicode/utf16"
 )
 
-func ToEqualBytes(b []byte, values ...interface{}) (string, bool) {
+func toEqualBytes(b []byte, values ...interface{}) (string, bool) {
 	buf := bytes.NewBuffer([]byte{})
 	err := writeBytes(buf, values...)
 	if err != nil {

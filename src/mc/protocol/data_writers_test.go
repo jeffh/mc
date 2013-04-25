@@ -20,7 +20,7 @@ func TestProtocolEntityMetadataSliceWriter(t *testing.T) {
 	err := ProtocolWriteEntityMetadataSlice(w, metadata)
 	Expect(t, err, ToBeNil)
 
-	Expect(t, b.Bytes(), ToEqualBytes,
+	Expect(t, b.Bytes(), toEqualBytes,
 		// these don't represent actual data types
 		// but we're just testing our flexibility to parse everything
 		entityKey(EntityFlags, EntityMetadataByte), byte(6),

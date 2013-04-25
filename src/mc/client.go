@@ -7,22 +7,18 @@ import (
 	//"unicode/utf16"
 )
 
-type Logger interface {
-	Printf(format string, v ...interface{})
-}
-
 //////////////////////////////////////////////////////////
 type Client struct {
 	Connection    *protocol.Connection
 	Outbox        chan interface{}
 	Inbox         chan interface{}
 	Logger        Logger
-	Exited        chan bool
+	Exit          chan bool
 	LogTraffic    bool
 	AutoKeepAlive bool
 }
 
-func NewClient(stream io.ReadWriteCloser, l Logger) *Client {
+func NewClient(stream io.ReadWriteCloser, msgBuffer int, l Logger) *Client {
 	if l == nil {
 		l = &protocol.NullLogger{}
 	}
@@ -30,10 +26,10 @@ func NewClient(stream io.ReadWriteCloser, l Logger) *Client {
 	writer := protocol.NewWriter(stream, protocol.ClientPacketMapper, nil, l)
 	return &Client{
 		Connection:    protocol.NewConnection(reader, writer),
-		Outbox:        make(chan interface{}, 50),
-		Inbox:         make(chan interface{}, 50),
+		Outbox:        make(chan interface{}, msgBuffer),
+		Inbox:         make(chan interface{}, msgBuffer),
 		Logger:        l,
-		Exited:        make(chan bool),
+		Exit:          make(chan bool),
 		AutoKeepAlive: true,
 	}
 }
@@ -90,8 +86,6 @@ func (c *Client) performConnect(hostname string, port int32, username string, us
 		}
 	}
 
-	c.Outbox <- &protocol.ClientStatus{}
-
 	// spawn!
 	return err
 }
@@ -111,8 +105,9 @@ func (c *Client) ProcessInbox() {
 			c.Inbox <- p
 		} else {
 			c.log("Failed to read packet: %s", err)
+			panic(err)
 			if err == io.EOF {
-				c.Exited <- true
+				c.Exit <- true
 				return
 			}
 		}
@@ -124,14 +119,14 @@ func (c *Client) ProcessOutbox() {
 		p, ok := <-c.Outbox
 		if !ok {
 			c.log("Outbox closed")
-			c.Exited <- true
+			c.Exit <- true
 			return
 		}
 		err := c.WritePacket(p)
 		if err != nil {
 			c.log("Failed to write struct (%#v): %s", p, err)
 			if err == io.EOF {
-				c.Exited <- true
+				c.Exit <- true
 				return
 			}
 		}
@@ -140,21 +135,15 @@ func (c *Client) ProcessOutbox() {
 
 func (c *Client) log(format string, v ...interface{}) {
 	s := fmt.Sprintf(format, v...)
-	c.Logger.Printf("[Client] %s", s)
+	c.Logger.Printf("[Client] %s\n", s)
 }
 
 func (c *Client) WritePacket(v interface{}) error {
-	if c.LogTraffic {
-		c.log("<- %#v", v)
-	}
 	err := c.Connection.WritePacket(v)
 	return err
 }
 
 func (c *Client) ReadPacket() (interface{}, error) {
 	p, err := c.Connection.ReadPacket()
-	if c.LogTraffic {
-		c.log("-> %#v", p)
-	}
 	return p, err
 }

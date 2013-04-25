@@ -7,25 +7,28 @@ import (
 	"io"
 )
 
-func RandomBytes(size int) ([]byte, error) {
+// Securely generates a random series of bytes of the given size.
+func randomBytes(size int) ([]byte, error) {
 	b := make([]byte, size)
 	_, err := io.ReadFull(rand.Reader, b)
 	return b, err
 }
 
+// Generates a secret key for opening encrypted connections
 func GenerateSecretKey() ([]byte, error) {
-	return RandomBytes(16)
+	return randomBytes(16)
 }
 
+// Promotes the given connection to be encrypted.
 func EncryptConnection(c *Connection) {
 	key := c.Encryption.SharedKey
-	c.UpgradeReader(AesCfbReader(key, key))
-	c.UpgradeWriter(AesCfbWriter(key, key))
+	c.UpgradeReader(aesCfbReader(key, key))
+	c.UpgradeWriter(aesCfbWriter(key, key))
 }
 
 ////////////////////////////////////////////////////////////
 
-func AesCfbReader(key, iv []byte) ReaderFactory {
+func aesCfbReader(key, iv []byte) ReaderFactory {
 	return func(r io.Reader) io.Reader {
 		block, err := aes.NewCipher(key)
 		if err != nil {
@@ -39,7 +42,7 @@ func AesCfbReader(key, iv []byte) ReaderFactory {
 	}
 }
 
-func AesCfbWriter(key, iv []byte) WriterFactory {
+func aesCfbWriter(key, iv []byte) WriterFactory {
 	return func(w io.Writer) io.Writer {
 		block, err := aes.NewCipher(key)
 		if err != nil {
