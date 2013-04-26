@@ -22,7 +22,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	c := mc.NewClient(conn, 100, &mc.StdoutLogger{})
+	c := mc.NewClient(conn, 20, &mc.StdoutLogger{})
 	c.LogTraffic = true
 	err = c.ConnectUnencrypted(host, port, "MCBot")
 	//err = c.Connect("localhost", 1337, "MCBot")

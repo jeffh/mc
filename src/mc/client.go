@@ -34,12 +34,6 @@ func NewClient(stream io.ReadWriteCloser, msgBuffer int, l Logger) *Client {
 	}
 }
 
-func panicIf(err error) {
-	if err != nil {
-		panic(err)
-	}
-}
-
 //func (c *Client) readDump() {
 //	for {
 //		var b byte
