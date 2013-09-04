@@ -16,18 +16,18 @@ func createProtocolWriter() (*Writer, *bytes.Buffer) {
 func TestWriterCanWriteFloats(t *testing.T) {
 	w, buf := createProtocolWriter()
 	p := UpdateHealth{
-		Health:     int16(13),
+		Health:     float32(13),
 		Food:       int16(14),
 		Saturation: float32(3.5),
 	}
 	err := w.WriteStruct(&p)
 	Expect(t, err, ToBeNil)
 
-	var Health, Food int16
-	var Saturation float32
+	var Food int16
+	var Health, Saturation float32
 	err = readBytes(buf, &Health, &Food, &Saturation)
 	Expect(t, err, ToBeNil)
-	Expect(t, Health, ToEqual, int16(13))
+	Expect(t, Health, ToEqual, float32(13))
 	Expect(t, Food, ToEqual, int16(14))
 	Expect(t, Saturation, ToEqual, float32(3.5))
 }

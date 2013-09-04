@@ -1,4 +1,4 @@
-PACKAGES=mc mc/protocol nbt
+PACKAGES=mc mc/protocol mc/simulator nbt smpm
 FMT_PACKAGES=$(PACKAGES)
 OUTFILE=mc
 MAINFILE=src/main.go

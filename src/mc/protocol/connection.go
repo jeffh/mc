@@ -174,7 +174,7 @@ type ReadPacketer interface {
 }
 
 // Represents the minecraft connection. It allows consumers of this type
-// to send and receive packets 
+// to send and receive packets
 type Connection struct {
 	Writer     WritePacketer
 	Reader     ReadPacketer

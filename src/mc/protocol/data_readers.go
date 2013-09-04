@@ -21,8 +21,9 @@ var DefaultDataReaders = make(DataReaders)
 func init() {
 	// since encoding/binary supports only fixed-sized data types
 	// we need to add custom parsers for the given datatypes
-	DefaultDataReaders.Add("", ProtocolReadString) // strings
-	DefaultDataReaders.Add(true, ProtocolReadBool) // booleans
+	DefaultDataReaders.Add("", ProtocolReadString)               // strings
+	DefaultDataReaders.Add(LevelType(""), ProtocolReadLevelType) // strings
+	DefaultDataReaders.Add(true, ProtocolReadBool)               // booleans
 
 	// there are more packets that use (len int16, []byte), so this is default
 	// method of parsing unless custom parsers are available for each
@@ -33,11 +34,22 @@ func init() {
 	DefaultDataReaders.Add(Int32PrefixedBytes{}, ProtocolReadInt32PrefixedBytes)
 
 	DefaultDataReaders.Add([]EntityMetadata{}, ProtocolReadEntityMetadataSlice)
-	DefaultDataReaders.Add(DestroyEntity{}, ProtocolReadDestroyEntity) //needs test
-	DefaultDataReaders.Add(MapChunkBulk{}, ProtocolReadMapChunkBulk)   //needs test
+	DefaultDataReaders.Add(DestroyEntity{}, ProtocolReadDestroyEntity)
+	DefaultDataReaders.Add(MapChunkBulk{}, ProtocolReadMapChunkBulk)
+
+	DefaultDataReaders.Add(SpawnObject{}, ProtocolReadSpawnObject)           // needs test
+	DefaultDataReaders.Add(EntityProperties{}, ProtocolReadEntityProperties) // needs test
 }
 
 //////////////////////////////////////////////////////////
+
+func ProtocolReadLevelType(r *Reader) (v interface{}, err error) {
+	var value interface{}
+	value, err = ProtocolReadString(r)
+	str := value.(string)
+	v = LevelType(str)
+	return
+}
 
 func ProtocolReadDestroyEntity(r *Reader) (v interface{}, err error) {
 	var destroyEntity DestroyEntity
@@ -83,8 +95,10 @@ func ProtocolReadStringSlice(r *Reader) (v interface{}, err error) {
 
 func ProtocolReadMapChunkBulk(r *Reader) (v interface{}, err error) {
 	var chunk MapChunkBulk
-	var countSize int16
-	err = r.ReadValue(&countSize)
+	defer func() { v = chunk }()
+
+	var metadataSize int16
+	err = r.ReadValue(&metadataSize)
 	if err != nil {
 		return
 	}
@@ -106,7 +120,7 @@ func ProtocolReadMapChunkBulk(r *Reader) (v interface{}, err error) {
 		return
 	}
 
-	chunk.Metadatas = make([]ChunkBulkMetadata, countSize)
+	chunk.Metadatas = make([]ChunkBulkMetadata, metadataSize)
 	err = r.ReadSlice(&chunk.Metadatas)
 	v = chunk
 	return
@@ -259,5 +273,125 @@ func ProtocolReadSlot(r *Reader) (v interface{}, err error) {
 
 	s.GzippedNBT = make([]byte, size)
 	err = r.ReadSlice(&s.GzippedNBT)
+	return
+}
+
+func ProtocolReadSpawnObject(r *Reader) (v interface{}, err error) {
+	var spawnObject SpawnObject
+	defer func() { v = spawnObject }()
+
+	err = r.ReadValue(&spawnObject.EntityID)
+	if err != nil {
+		return
+	}
+
+	err = r.ReadValue(&spawnObject.Type)
+	if err != nil {
+		return
+	}
+
+	err = r.ReadValue(&spawnObject.X)
+	if err != nil {
+		return
+	}
+
+	err = r.ReadValue(&spawnObject.Y)
+	if err != nil {
+		return
+	}
+
+	err = r.ReadValue(&spawnObject.Z)
+	if err != nil {
+		return
+	}
+
+	err = r.ReadValue(&spawnObject.Pitch)
+	if err != nil {
+		return
+	}
+
+	err = r.ReadValue(&spawnObject.Yaw)
+	if err != nil {
+		return
+	}
+
+	err = r.ReadValue(&spawnObject.Flag)
+	if err != nil {
+		return
+	}
+
+	if spawnObject.Type == EntityItemFrame {
+		err = r.ReadValue(&spawnObject.Orientation)
+	} else if spawnObject.Type == EntityFallingObject {
+		err = r.ReadValue(&spawnObject.BlockType)
+	} else if IsProjectileEntity(spawnObject.Type) {
+		err = r.ReadValue(&spawnObject.OwnerEntityID)
+	}
+	if err != nil {
+		return
+	}
+
+	if spawnObject.Flag > 0 {
+		err = r.ReadValue(&spawnObject.XVelocity)
+		if err != nil {
+			return
+		}
+
+		err = r.ReadValue(&spawnObject.YVelocity)
+		if err != nil {
+			return
+		}
+
+		err = r.ReadValue(&spawnObject.ZVelocity)
+		if err != nil {
+			return
+		}
+	}
+	return
+}
+
+func ProtocolReadEntityProperties(r *Reader) (v interface{}, err error) {
+	var e EntityProperties
+	defer func() { v = e }()
+
+	err = r.ReadValue(&e.EntityID)
+	if err != nil {
+		return
+	}
+
+	var count int32
+	err = r.ReadValue(&count)
+	if err != nil {
+		return
+	}
+
+	e.Properties = make([]EntityProperty, 0)
+
+	for i := int32(0); i < count; i++ {
+		var property EntityProperty
+		err = r.ReadDispatch(&property.Key)
+		if err != nil {
+			return
+		}
+
+		err = r.ReadValue(&property.Value)
+		if err != nil {
+			return
+		}
+
+		var size int16
+		err = r.ReadValue(&size)
+		if err != nil {
+			return
+		}
+
+		property.Attributes = make([]EntityAttribute, size)
+		err = r.ReadSlice(&property.Attributes)
+		if err != nil {
+			return
+		}
+
+		e.Properties = append(e.Properties, property)
+	}
 	return
 }

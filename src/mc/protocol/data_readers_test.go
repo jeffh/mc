@@ -174,11 +174,168 @@ func TestProtocolSlotReaderForEmptyGzippedNBT(t *testing.T) {
 
 	v, err := ProtocolReadSlot(r)
 	Expect(t, err, ToBeNil)
-	slot, ok := v.(Slot)
-	Expect(t, ok, ToBeTrue)
+	slot := v.(Slot)
 	Expect(t, slot.ID, ToBe, int16(2))
 	Expect(t, slot.Count, ToBe, int8(100))
 	Expect(t, slot.Damage, ToBe, int16(99))
 	Expect(t, slot.GzippedNBT, ToBeLengthOf, 0)
 	Expect(t, b.Len(), ToBe, 0)
+}
+
+func TestProtocolDestroyEntityReader(t *testing.T) {
+	r, b := createProtocolReader()
+	err := writeBytes(b, byte(2), int32(4), int32(5))
+	Expect(t, err, ToBeNil)
+
+	v, err := ProtocolReadDestroyEntity(r)
+	Expect(t, err, ToBeNil)
+	destroyed := v.(DestroyEntity)
+	Expect(t, destroyed.EntityIDs, ToBeLengthOf, 2)
+	Expect(t, destroyed.EntityIDs[0], ToEqual, int32(4))
+	Expect(t, destroyed.EntityIDs[1], ToEqual, int32(5))
+}
+
+func TestProtocolSpawnObjectReaderWithNoFlag(t *testing.T) {
+	r, b := createProtocolReader()
+	err := writeBytes(b, int32(1), int8(EntityBoat),
+		int32(2), int32(3), int32(4), // X, Y, Z
+		int8(5), int8(6), // Pitch, Yaw
+		int32(0), // Flag
+	)
+	Expect(t, err, ToBeNil)
+
+	v, err := ProtocolReadSpawnObject(r)
+	Expect(t, err, ToBeNil)
+	spawnObject := v.(SpawnObject)
+	Expect(t, spawnObject.EntityID, ToEqual, int32(1))
+	Expect(t, spawnObject.Type, ToEqual, EntityBoat)
+	Expect(t, spawnObject.X, ToEqual, int32(2))
+	Expect(t, spawnObject.Y, ToEqual, int32(3))
+	Expect(t, spawnObject.Z, ToEqual, int32(4))
+	Expect(t, spawnObject.Pitch, ToEqual, int8(5))
+	Expect(t, spawnObject.Yaw, ToEqual, int8(6))
+	Expect(t, spawnObject.Flag, ToEqual, int32(0))
+}
+
+func TestProtocolSpawnObjectReaderWithNonZeroFlag(t *testing.T) {
+	r, b := createProtocolReader()
+	err := writeBytes(b, int32(1), int8(EntityBoat),
+		int32(2), int32(3), int32(4), // X, Y, Z
+		int8(5), int8(6), // Pitch, Yaw
+		int32(1),                     // Flag
+		int16(7), int16(8), int16(9), // X, Y, Z Velocities
+	)
+	Expect(t, err, ToBeNil)
+
+	v, err := ProtocolReadSpawnObject(r)
+	Expect(t, err, ToBeNil)
+	spawnObject := v.(SpawnObject)
+	Expect(t, spawnObject.Flag, ToEqual, int32(1))
+	Expect(t, spawnObject.XVelocity, ToEqual, int16(7))
+	Expect(t, spawnObject.YVelocity, ToEqual, int16(8))
+	Expect(t, spawnObject.ZVelocity, ToEqual, int16(9))
+}
+
+func TestProtocolSpawnObjectReaderWithItemFrame(t *testing.T) {
+	r, b := createProtocolReader()
+	err := writeBytes(b, int32(1), int8(EntityItemFrame),
+		int32(2), int32(3), int32(4), // X, Y, Z
+		int8(5), int8(6), // Pitch, Yaw
+		int32(1),                     // Flag
+		int32(OrientationWest),       // Orientation
+		int16(7), int16(8), int16(9), // X, Y, Z Velocities
+	)
+	Expect(t, err, ToBeNil)
+
+	v, err := ProtocolReadSpawnObject(r)
+	Expect(t, err, ToBeNil)
+	spawnObject := v.(SpawnObject)
+	Expect(t, spawnObject.Flag, ToEqual, int32(1))
+	Expect(t, spawnObject.Orientation, ToEqual, OrientationType(OrientationWest))
+	Expect(t, spawnObject.XVelocity, ToEqual, int16(7))
+	Expect(t, spawnObject.YVelocity, ToEqual, int16(8))
+	Expect(t, spawnObject.ZVelocity, ToEqual, int16(9))
+}
+
+func TestProtocolSpawnObjectReaderWithBlockType(t *testing.T) {
+	r, b := createProtocolReader()
+	err := writeBytes(b, int32(1), int8(EntityItemFrame),
+		int32(2), int32(3), int32(4), // X, Y, Z
+		int8(5), int8(6), // Pitch, Yaw
+		int32(1),                     // Flag
+		int32(OrientationWest),       // Orientation
+		int16(7), int16(8), int16(9), // X, Y, Z Velocities
+	)
+	Expect(t, err, ToBeNil)
+
+	v, err := ProtocolReadSpawnObject(r)
+	Expect(t, err, ToBeNil)
+	spawnObject := v.(SpawnObject)
+	Expect(t, spawnObject.Flag, ToEqual, int32(1))
+	Expect(t, spawnObject.Orientation, ToEqual, OrientationType(OrientationWest))
+	Expect(t, spawnObject.XVelocity, ToEqual, int16(7))
+	Expect(t, spawnObject.YVelocity, ToEqual, int16(8))
+	Expect(t, spawnObject.ZVelocity, ToEqual, int16(9))
+}
+
+func TestProtocolSpawnObjectReaderWithProjectile(t *testing.T) {
+	r, b := createProtocolReader()
+	err := writeBytes(b, int32(1), int8(EntityFireball),
+		int32(2), int32(3), int32(4), // X, Y, Z
+		int8(5), int8(6), // Pitch, Yaw
+		int32(1),                     // Flag
+		int32(10),                    // OwnerEntityID
+		int16(7), int16(8), int16(9), // X, Y, Z Velocities
+	)
+	Expect(t, err, ToBeNil)
+
+	v, err := ProtocolReadSpawnObject(r)
+	Expect(t, err, ToBeNil)
+	spawnObject := v.(SpawnObject)
+	Expect(t, spawnObject.Flag, ToEqual, int32(1))
+	Expect(t, spawnObject.OwnerEntityID, ToEqual, int32(10))
+	Expect(t, spawnObject.XVelocity, ToEqual, int16(7))
+	Expect(t, spawnObject.YVelocity, ToEqual, int16(8))
+	Expect(t, spawnObject.ZVelocity, ToEqual, int16(9))
+}
+
+func TestProtocolEntityProperties(t *testing.T) {
+	r, b := createProtocolReader()
+	err := writeBytes(b,
+		int32(1),                        // entity id
+		int32(2),                        // 2 properties
+		"hello", float64(3.4), int16(2), // key, value, attr count
+		int64(3), float64(5.0), byte(4),
+		int64(4), float64(6.0), byte(5),
+		"world", float64(5.4), int16(0), // key, value, attr count
+	)
+	Expect(t, err, ToBeNil)
+
+	v, err := ProtocolReadEntityProperties(r)
+	Expect(t, err, ToBeNil)
+	properties := v.(EntityProperties)
+	Expect(t, properties.EntityID, ToEqual, int32(1))
+	Expect(t, properties.Properties, ToEqual, []EntityProperty{
+		{
+			Key:   "hello",
+			Value: float64(3.4),
+			Attributes: []EntityAttribute{
+				{
+					UUID:      int64(3),
+					Amount:    float64(5.0),
+					Operation: byte(4),
+				},
+				{
+					UUID:      int64(4),
+					Amount:    float64(6.0),
+					Operation: byte(5),
+				},
+			},
+		},
+		{
+			Key:        "world",
+			Value:      float64(5.4),
+			Attributes: []EntityAttribute{},
+		},
+	})
 }

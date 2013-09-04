@@ -1,0 +1,32 @@
+[]protocol.ChunkBulkMetadata{
+    protocol.ChunkBulkMetadata{
+ChunkX:7,
+           ChunkY:17,
+           PrimaryBitmap:127,
+           AddBitmap:0
+    },
+        protocol.ChunkBulkMetadata{
+ChunkX:8,
+       ChunkY:17,
+       PrimaryBitmap:63,
+       AddBitmap:0
+        },
+        protocol.ChunkBulkMetadata{
+ChunkX:8,
+       ChunkY:18,
+       PrimaryBitmap:31,
+       AddBitmap:0
+        },
+        protocol.ChunkBulkMetadata{
+ChunkX:7,
+       ChunkY:18,
+       PrimaryBitmap:63,
+       AddBitmap:0
+        },
+        protocol.ChunkBulkMetadata{
+ChunkX:6,
+       ChunkY:18,
+       PrimaryBitmap:63,
+       AddBitmap:0
+        }
+}

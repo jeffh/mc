@@ -6,7 +6,8 @@ import (
 	"io"
 )
 
-const Version = 60 // minecraft protocol version supported
+// minecraft protocol version supported
+const Version = 74 // 1.6.2
 
 ///////////////////////////////////////////////////////
 
@@ -56,6 +57,7 @@ func init() {
 	basePacketMapper.Define(0x29, EntityEffect{})
 	basePacketMapper.Define(0x2A, RemoveEntityEffect{})
 	basePacketMapper.Define(0x2B, SetExperience{})
+	basePacketMapper.Define(0x2C, EntityProperties{})
 	basePacketMapper.Define(0x33, ChunkData{})
 	basePacketMapper.Define(0x34, MultiBlockChange{})
 	basePacketMapper.Define(0x35, BlockChange{})
@@ -120,7 +122,7 @@ type KeepAlive struct {
 }
 type LoginRequest struct {
 	EntityID   int32
-	LevelType  string
+	LevelType  LevelType
 	GameMode   GameMode
 	Dimension  GameDimension
 	Difficulty GameDifficulty
@@ -153,15 +155,16 @@ type UseEntity struct {
 	IsLeftMouseButton bool
 }
 type UpdateHealth struct {
-	Health, Food int16
-	Saturation   float32
+	Health     float32
+	Food       int16
+	Saturation float32
 }
 type Respawn struct {
 	Dimension   GameDimension
 	Difficulty  GameDifficulty
 	GameMode    GameMode
 	WorldHeight int16
-	LevelType   string
+	LevelType   LevelType
 }
 type Player struct {
 	IsOnGround bool
@@ -273,9 +276,19 @@ type SpawnObject struct {
 	EntityID                        int32
 	Type                            EntityType
 	X, Y, Z                         int32
-	Data                            int32
-	XVelocity, YVelocity, ZVelocity int16 // can be missing if data is 0
+	Pitch, Yaw                      int8
+	Flag                            int32
+	Orientation                     OrientationType // only for EntityItemFrame type
+	BlockType                       int32           // only for EntityFallingObject type
+	OwnerEntityID                   int32           // only for projectile types
+	PotionData                      int32           // only for EntityThrownPotion type
+	XVelocity, YVelocity, ZVelocity int16           // can be missing if data is 0
 }
+
+func (s *SpawnObject) HasVelocity() bool {
+	return s.Flag > 0
+}
+
 type SpawnMob struct {
 	EntityID                        int32
 	Type                            MobType
@@ -352,6 +365,10 @@ type SetExperience struct {
 	Percent float32
 	Level   int16
 	Total   int16
+}
+type EntityProperties struct {
+	EntityID   int32
+	Properties []EntityProperty
 }
 type ChunkData struct {
 	X, Y                 int32
@@ -441,8 +458,13 @@ type SetSlot struct {
 	Slot     int16
 	Data     Slot
 }
+
+func (s *SetSlot) IsHeld() bool {
+	return s.WindowID == -1 && s.Slot == -1
+}
+
 type SetWindowItems struct {
-	WindowID int8
+	WindowID WindowType
 	Slots    []Slot
 }
 type UpdateWindowProperty struct {
@@ -490,10 +512,23 @@ type PlayerListItem struct {
 	Ping   int16
 }
 type PlayerAbilities struct {
-	Flags        int8
-	FlyingSpeed  int8
-	WalkingSpeed int8
+	Flags        PlayerAbilitiesFlag
+	FlyingSpeed  float32
+	WalkingSpeed float32
 }
+
+func (p *PlayerAbilities) IsFlying() bool {
+	return (p.Flags & PlayerAbilitiesFlagFlying) > 0
+}
+
+func (p *PlayerAbilities) IsGod() bool {
+	return (p.Flags & PlayerAbilitiesFlagGodMode) > 0
+}
+
+func (p *PlayerAbilities) IsGhost() bool {
+	return (p.Flags & PlayerAbilitiesFlagFlyMode) > 0
+}
+
 type TabComplete struct {
 	Text string
 }
@@ -647,10 +682,12 @@ type PacketType byte
 
 ///////////////////////////////////////////////////////
 
+type LevelType string
+
 const (
-	DefaultLevelType     string = "default"
-	FlatLevelType               = "flat"
-	LargeBiomesLevelType        = "largeBiomes"
+	DefaultLevelType     LevelType = "default"
+	FlatLevelType                  = "flat"
+	LargeBiomesLevelType           = "largeBiomes"
 )
 
 type ViewDistance int8
@@ -721,6 +758,7 @@ type EntityType int8
 
 const (
 	EntityBoat             EntityType = 1
+	EntityItemStack                   = 2
 	EntityMinecart                    = 10
 	EntityMinecartStorage             = 11
 	EntityMinecartPowered             = 12
@@ -729,15 +767,26 @@ const (
 	EntityArrow                       = 60
 	EntitySnowball                    = 61
 	EntityEgg                         = 62
+	EntityFireball                    = 63
+	EntityFireCharge                  = 64
 	EntityEnderpearl                  = 65
 	EntityWitherSkull                 = 66
 	EntityFallingObject               = 70
+	EntityItemFrame                   = 71
 	EntityEyeOfEnder                  = 72
 	EntityThrownPotion                = 73
 	EntityFallingDragonEgg            = 74
 	EntityThrownExpBottle             = 75
 	EntityFishingFloat                = 90
 )
+
+func IsProjectileEntity(t EntityType) bool {
+	switch t {
+	case EntityFireball, EntityArrow, EntityThrownPotion, EntityThrownExpBottle, EntityFishingFloat, EntitySnowball:
+		return true
+	}
+	return false
+}
 
 type ActionType int8
 
@@ -888,3 +937,61 @@ const (
 	TeamFriendlyFireOn
 	TeamFriendlyFireShowFriendlyInvisible = 3
 )
+
+/////////////////////////////////////////////////////////
+
+type OrientationType int32
+
+const (
+	OrientationSouth OrientationType = iota
+	OrientationWest
+	OrientationNorth
+	OrientationEast
+)
+
+/////////////////////////////////////////////////////////
+
+type WindowType int8
+
+const (
+	// used for SetWindowItems and SetSlot
+	WindowTypeInventory = 0
+)
+
+const (
+	WindowTypeChest WindowType = iota
+	WindowTypeWorkbench
+	WindowTypeFurnance
+	WindowTypeDispenser
+	WindowTypeEnchantmentTable
+	WindowTypeBrewingStand
+	WindowTypeTrade
+	WindowTypeBeacon
+	WindowTypeAnvil
+	WindowTypeHopper
+)
+
+/////////////////////////////////////////////////////////
+
+type PlayerAbilitiesFlag int8
+
+const (
+	PlayerAbilitiesFlagCreativeMode PlayerAbilitiesFlag = 1
+	PlayerAbilitiesFlagFlying                           = 2
+	PlayerAbilitiesFlagFlyMode                          = 4
+	PlayerAbilitiesFlagGodMode                          = 8
+)
+
+/////////////////////////////////////////////////////////
+
+type EntityProperty struct {
+	Key        string
+	Value      float64
+	Attributes []EntityAttribute
+}
+
+type EntityAttribute struct {
+	UUID      int64
+	Amount    float64
+	Operation byte
+}

@@ -24,7 +24,7 @@ func TestReaderCanDispatchToTypeTable(t *testing.T) {
 	Expect(t, err, ToBeNil)
 
 	Expect(t, p.EntityID, ToBe, int32(13))
-	Expect(t, p.LevelType, ToBe, "default")
+	Expect(t, p.LevelType, ToBe, LevelType("default"))
 	Expect(t, p.GameMode, ToBe, GameModeCreative)
 	Expect(t, p.Dimension, ToBe, GameDimensionNether)
 	Expect(t, p.Difficulty, ToBe, GameDifficultyNormal)
@@ -49,14 +49,14 @@ func TestReaderCanParseDoublesAndBools(t *testing.T) {
 
 func TestReaderCanParseFloats(t *testing.T) {
 	r, b := createProtocolReader()
-	err := writeBytes(b, int16(13), int16(14), float32(3.5))
+	err := writeBytes(b, float32(13), int16(14), float32(3.5))
 	Expect(t, err, ToBeNil)
 
 	p := UpdateHealth{}
 	err = r.ReadStruct(&p)
 	Expect(t, err, ToBeNil)
 
-	Expect(t, p.Health, ToBe, int16(13))
+	Expect(t, p.Health, ToBe, float32(13))
 	Expect(t, p.Food, ToBe, int16(14))
 	Expect(t, p.Saturation, ToBe, float32(3.5))
 }
