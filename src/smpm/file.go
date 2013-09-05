@@ -2,7 +2,6 @@
 package smpm
 
 import (
-	"crypto/md5"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -166,20 +165,6 @@ func (f *File) Parse() (columns []ChunkColumn, err error) {
 	return
 }
 
-var count = 0
-
-func hash(bytes []byte, prefix string) {
-	hasher := md5.New()
-	hasher.Write(bytes)
-	fmt.Printf(" ==> %s %x\n", prefix, hasher.Sum(nil))
-}
-
 func (f *File) readBytes(bytes []byte) error {
-	defer func() {
-		hasher := md5.New()
-		hasher.Write(bytes)
-		count += len(bytes)
-		fmt.Printf("    Read %d bytes (t=%d, hash=%x)\n", len(bytes), count, hasher.Sum(nil))
-	}()
 	return binary.Read(f.reader, f.ByteOrder, &bytes)
 }

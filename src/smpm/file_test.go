@@ -3,6 +3,8 @@ package smpm
 import (
 	"bytes"
 	"compress/zlib"
+	"crypto/md5"
+	"fmt"
 	. "github.com/jeffh/goexpect"
 	"io"
 	"os"
@@ -79,6 +81,12 @@ func fill(array []byte, value byte) {
 	}
 }
 
+func hash(bytes []byte) string {
+	hasher := md5.New()
+	hasher.Write(bytes)
+	return fmt.Sprintf("%x", hasher.Sum(nil))
+}
+
 func TestReadingBulkChunk(t *testing.T) {
 	r := fixtureAsReader("fixtures/sample.bin.zlib")
 	reader, err := zlib.NewReader(r)
@@ -95,7 +103,8 @@ func TestReadingBulkChunk(t *testing.T) {
 	Expect(t, columns[3].Metadata, ToEqual, &sampleChunkColumnMetadata.metadatas[3])
 	Expect(t, columns[4].Metadata, ToEqual, &sampleChunkColumnMetadata.metadatas[4])
 
-	chunk := columns[0].Chunks[0]
+	chunks := columns[0].Chunks
+	chunk := chunks[0]
 
 	Expect(t, chunk.Types, ToEqual, types)
 	Expect(t, chunk.Light, ToEqual, light)
@@ -105,6 +114,86 @@ func TestReadingBulkChunk(t *testing.T) {
 	biome := [256]byte{}
 	fill(biome[:], 5)
 	Expect(t, columns[0].Biome, ToEqual, biome)
+	// assert hashes.. otherwise there would be a lot of data below...
+
+	emptyChunkType := "620f0b67a91f7f74151bc5be745b7110"
+	Expect(t, hash(chunks[0].Types), ToEqual, "4175bf9ee021b392893d87638f43370e")
+	Expect(t, hash(chunks[1].Types), ToEqual, "ebaf454b9465fec94a6265659edc00b2")
+	Expect(t, hash(chunks[2].Types), ToEqual, "d9c9e8403b128e2f3dba60a987e364bc")
+	Expect(t, hash(chunks[3].Types), ToEqual, "f413f073856a9d97e3c4b205e9be650b")
+	Expect(t, hash(chunks[4].Types), ToEqual, "9e24686b31a0f08d1b875cb64434aeef")
+	Expect(t, hash(chunks[5].Types), ToEqual, emptyChunkType)
+	Expect(t, hash(chunks[6].Types), ToEqual, emptyChunkType)
+	Expect(t, hash(chunks[7].Types), ToEqual, emptyChunkType)
+	Expect(t, hash(chunks[8].Types), ToEqual, emptyChunkType)
+	Expect(t, hash(chunks[9].Types), ToEqual, emptyChunkType)
+	Expect(t, hash(chunks[10].Types), ToEqual, emptyChunkType)
+	Expect(t, hash(chunks[11].Types), ToEqual, emptyChunkType)
+	Expect(t, hash(chunks[12].Types), ToEqual, emptyChunkType)
+	Expect(t, hash(chunks[13].Types), ToEqual, emptyChunkType)
+	Expect(t, hash(chunks[14].Types), ToEqual, emptyChunkType)
+	Expect(t, hash(chunks[15].Types), ToEqual, emptyChunkType)
+
+	emptyMetadata := "c99a74c555371a433d121f551d6c6398"
+	Expect(t, hash(chunks[0].Metadata), ToEqual, emptyMetadata)
+	Expect(t, hash(chunks[1].Metadata), ToEqual, "e99dfa2266eb6569926d882e0161cfbc")
+	Expect(t, hash(chunks[2].Metadata), ToEqual, "24179311124cb33c7811e51e4572a4b7")
+	Expect(t, hash(chunks[3].Metadata), ToEqual, "1bbc42fb8501444b1d70f7616bc9e70e")
+	Expect(t, hash(chunks[4].Metadata), ToEqual, "74ba179fddcfc3fb292c8f8549b20ee3")
+	Expect(t, hash(chunks[5].Metadata), ToEqual, emptyMetadata)
+	Expect(t, hash(chunks[6].Metadata), ToEqual, emptyMetadata)
+	Expect(t, hash(chunks[7].Metadata), ToEqual, emptyMetadata)
+	Expect(t, hash(chunks[8].Metadata), ToEqual, emptyMetadata)
+	Expect(t, hash(chunks[9].Metadata), ToEqual, emptyMetadata)
+	Expect(t, hash(chunks[10].Metadata), ToEqual, emptyMetadata)
+	Expect(t, hash(chunks[11].Metadata), ToEqual, emptyMetadata)
+	Expect(t, hash(chunks[12].Metadata), ToEqual, emptyMetadata)
+	Expect(t, hash(chunks[13].Metadata), ToEqual, emptyMetadata)
+	Expect(t, hash(chunks[14].Metadata), ToEqual, emptyMetadata)
+	Expect(t, hash(chunks[15].Metadata), ToEqual, emptyMetadata)
+
+	emptyLight := "c99a74c555371a433d121f551d6c6398"
+	Expect(t, hash(chunks[0].Light), ToEqual, "9feb71a54cde3554322f06482eb8cb85")
+	Expect(t, hash(chunks[1].Light), ToEqual, "7a6dc760c0c9d5b05986ec8677179262")
+	Expect(t, hash(chunks[2].Light), ToEqual, "c7a68653d300db6010f61783a75f8c87")
+	Expect(t, hash(chunks[3].Light), ToEqual, emptyLight)
+	Expect(t, hash(chunks[4].Light), ToEqual, emptyLight)
+	Expect(t, hash(chunks[5].Light), ToEqual, emptyLight)
+	Expect(t, hash(chunks[6].Light), ToEqual, emptyLight)
+	Expect(t, hash(chunks[7].Light), ToEqual, emptyLight)
+	Expect(t, hash(chunks[8].Light), ToEqual, emptyLight)
+	Expect(t, hash(chunks[9].Light), ToEqual, emptyLight)
+	Expect(t, hash(chunks[10].Light), ToEqual, emptyLight)
+	Expect(t, hash(chunks[11].Light), ToEqual, emptyLight)
+	Expect(t, hash(chunks[12].Light), ToEqual, emptyLight)
+	Expect(t, hash(chunks[13].Light), ToEqual, emptyLight)
+	Expect(t, hash(chunks[14].Light), ToEqual, emptyLight)
+	Expect(t, hash(chunks[15].Light), ToEqual, emptyLight)
+
+	emptySkylight := "c99a74c555371a433d121f551d6c6398"
+	Expect(t, hash(chunks[0].Skylight), ToEqual, emptySkylight)
+	Expect(t, hash(chunks[1].Skylight), ToEqual, emptySkylight)
+	Expect(t, hash(chunks[2].Skylight), ToEqual, emptySkylight)
+	Expect(t, hash(chunks[3].Skylight), ToEqual, "d5703ee5485a1e4006f98113a1e321af")
+	Expect(t, hash(chunks[4].Skylight), ToEqual, "dec5d71f50653241f61c41962653a441")
+	Expect(t, hash(chunks[5].Skylight), ToEqual, emptySkylight)
+	Expect(t, hash(chunks[6].Skylight), ToEqual, emptySkylight)
+	Expect(t, hash(chunks[7].Skylight), ToEqual, emptySkylight)
+	Expect(t, hash(chunks[8].Skylight), ToEqual, emptySkylight)
+	Expect(t, hash(chunks[9].Skylight), ToEqual, emptySkylight)
+	Expect(t, hash(chunks[10].Skylight), ToEqual, emptySkylight)
+	Expect(t, hash(chunks[11].Skylight), ToEqual, emptySkylight)
+	Expect(t, hash(chunks[12].Skylight), ToEqual, emptySkylight)
+	Expect(t, hash(chunks[13].Skylight), ToEqual, emptySkylight)
+	Expect(t, hash(chunks[14].Skylight), ToEqual, emptySkylight)
+	Expect(t, hash(chunks[15].Skylight), ToEqual, emptySkylight)
+
+	emptyAdd := "c99a74c555371a433d121f551d6c6398"
+	for i := 0; i < len(chunks); i++ {
+		Expect(t, hash(chunks[i].Add), ToEqual, emptyAdd)
+	}
+
+	Expect(t, hash(columns[0].Biome[:]), ToEqual, "4dc2ca0ea9f82fef07b074d713086bed")
 }
 
 var light = []byte{
