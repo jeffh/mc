@@ -41,15 +41,11 @@ func (f *File) Parse() (columns []ChunkColumn, err error) {
 				}
 			}
 		}
-		fmt.Printf("    Blocks read: %d / %d\n", blocksToRead, len(chunks))
 		return nil
 	}
 
 	total := f.metadata.ChunkColumnCount()
-	fmt.Printf("Total Chunks: #%d\n", total)
 	for i := int16(0); i < total; i++ {
-		fmt.Printf("Chunk: #%d\n", i+1)
-		fmt.Printf(" Types\n")
 		metadata := f.metadata.NextMetadata()
 		column := ChunkColumn{
 			Chunks:   NewChunkSlice(ChunksPerColumn),
@@ -62,14 +58,12 @@ func (f *File) Parse() (columns []ChunkColumn, err error) {
 		if err != nil {
 			return
 		}
-		fmt.Printf(" Metadata\n")
 		err = eachChunkRead(chunks, metadata.PrimaryBitmap, func(c *Chunk) []byte {
 			return c.Metadata
 		})
 		if err != nil {
 			return
 		}
-		fmt.Printf(" Light\n")
 		err = eachChunkRead(chunks, metadata.PrimaryBitmap, func(c *Chunk) []byte {
 			return c.Light
 		})
@@ -77,7 +71,6 @@ func (f *File) Parse() (columns []ChunkColumn, err error) {
 			return
 		}
 		if f.metadata.HasSkylightData() {
-			fmt.Printf(" SkyLight\n")
 			err = eachChunkRead(chunks, metadata.PrimaryBitmap, func(c *Chunk) []byte {
 				return c.Skylight
 			})
@@ -85,7 +78,6 @@ func (f *File) Parse() (columns []ChunkColumn, err error) {
 				return
 			}
 		}
-		fmt.Printf(" Add\n")
 		err = eachChunkRead(chunks, metadata.AddBitmap, func(c *Chunk) []byte {
 			return c.Add
 		})
@@ -93,7 +85,6 @@ func (f *File) Parse() (columns []ChunkColumn, err error) {
 			return
 		}
 		if f.metadata.IsGroundUpContinuous() {
-			fmt.Printf(" Biome\n")
 			err = f.readBytes(column.Biome[:])
 			if err != nil {
 				return
