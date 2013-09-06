@@ -1,9 +1,5 @@
 package ax
 
-import (
-	"fmt"
-)
-
 // A NullLogger instance. A quick way to access the NullLogger
 var nullLogger Logger = &NullLogger{}
 
