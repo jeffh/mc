@@ -44,19 +44,19 @@ func (f *File) Parse() (columns []ChunkColumn, err error) {
 				}
 			}
 		}
-		f.Logger.Printf("Blocks Read: %d", blocksToRead)
+		f.Logger.Printf("    -> Chunks Read: %d", blocksToRead)
 		return nil
 	}
 
 	total := f.metadata.ChunkColumnCount()
 	for i := int16(0); i < total; i++ {
-		f.Logger.Printf("Chunk #%d", i+1)
+		chunkNumber := i + 1
 		metadata := f.metadata.NextMetadata()
 		column := ChunkColumn{
 			Chunks:   NewChunkSlice(ChunksPerColumn),
 			Metadata: &metadata,
 		}
-		f.Logger.Printf(" -> Types")
+		f.Logger.Printf("Chunk#%d -> Types", chunkNumber)
 		chunks := column.Chunks
 		err = eachChunkRead(chunks, metadata.PrimaryBitmap, func(c *Chunk) []byte {
 			return c.Types
@@ -64,14 +64,14 @@ func (f *File) Parse() (columns []ChunkColumn, err error) {
 		if err != nil {
 			return
 		}
-		f.Logger.Printf(" -> Metadata")
+		f.Logger.Printf("Chunk#%d -> Metadata", chunkNumber)
 		err = eachChunkRead(chunks, metadata.PrimaryBitmap, func(c *Chunk) []byte {
 			return c.Metadata
 		})
 		if err != nil {
 			return
 		}
-		f.Logger.Printf(" -> Light")
+		f.Logger.Printf("Chunk#%d -> Light", chunkNumber)
 		err = eachChunkRead(chunks, metadata.PrimaryBitmap, func(c *Chunk) []byte {
 			return c.Light
 		})
@@ -79,7 +79,7 @@ func (f *File) Parse() (columns []ChunkColumn, err error) {
 			return
 		}
 		if f.metadata.HasSkylightData() {
-			f.Logger.Printf(" -> SkylightData")
+			f.Logger.Printf("Chunk#%d -> SkylightData", chunkNumber)
 			err = eachChunkRead(chunks, metadata.PrimaryBitmap, func(c *Chunk) []byte {
 				return c.Skylight
 			})
@@ -87,7 +87,7 @@ func (f *File) Parse() (columns []ChunkColumn, err error) {
 				return
 			}
 		}
-		f.Logger.Printf(" -> Add")
+		f.Logger.Printf("Chunk#%d -> Add", chunkNumber)
 		err = eachChunkRead(chunks, metadata.AddBitmap, func(c *Chunk) []byte {
 			return c.Add
 		})
@@ -95,7 +95,7 @@ func (f *File) Parse() (columns []ChunkColumn, err error) {
 			return
 		}
 		if f.metadata.IsGroundUpContinuous() {
-			f.Logger.Printf(" -> Biome")
+			f.Logger.Printf("Chunk#%d -> Biome", chunkNumber)
 			err = f.readBytes(column.Biome[:])
 			if err != nil {
 				return
