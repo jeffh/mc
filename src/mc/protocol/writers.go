@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"ax"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -19,7 +20,7 @@ type Writer struct {
 	stream  io.Writer
 	writers DataWriters
 	mapper  GetPacketTyper
-	Logger  Logger
+	Logger  ax.Logger
 }
 
 // Creates a new writer that can write packets into the given io.Writer.
@@ -32,21 +33,18 @@ type Writer struct {
 //
 // The last two arguments are optional, passing nil will use their default values:
 // DefaultDataWriters and NullLogger.
-func NewWriter(stream io.Writer, m GetPacketTyper, w DataWriters, l Logger) *Writer {
+func NewWriter(stream io.Writer, m GetPacketTyper, w DataWriters, l ax.Logger) *Writer {
 	if w == nil {
 		w = DefaultDataWriters
 	}
 	if m == nil {
 		panic(fmt.Errorf("I got a null NewPacketStructer: %#v", m))
 	}
-	if l == nil {
-		l = &NullLogger{}
-	}
 	return &Writer{
 		stream:  stream,
 		writers: w,
 		mapper:  m,
-		Logger:  l,
+		Logger:  ax.Wrap(ax.Use(l), ax.NewPrefixLogger("[protocol] ")),
 	}
 }
 
@@ -63,7 +61,7 @@ func (w *Writer) UpgradeWriter(f WriterFactory) {
 func (w *Writer) WriteValue(v interface{}) error {
 	err := binary.Write(w.stream, binary.BigEndian, v)
 	if err != nil {
-		w.Logger.Printf("Error when writing %#v: %s\n", v, err)
+		w.Logger.Printf("Error when writing %#v: %s", v, err)
 	}
 	return err
 }
@@ -114,7 +112,7 @@ func (w *Writer) WriteStruct(v interface{}) (err error) {
 // writing the proper packet type prefix before writing the struct
 // provided.
 func (w *Writer) WritePacket(v interface{}) error {
-	w.Logger.Printf("C->S %#v\n", v)
+	w.Logger.Printf("C->S %#v", v)
 	pt, err := w.mapper.GetPacketType(v)
 	if err != nil {
 		return err

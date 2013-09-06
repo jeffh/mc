@@ -1,9 +1,11 @@
 package main
 
 import (
+	"ax"
 	"fmt"
 	"mc"
 	"mc/protocol"
+	"mc/simulator"
 	"net"
 	"time"
 )
@@ -22,7 +24,11 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	c := mc.NewClient(conn, 20, &mc.StdoutLogger{})
+	var logger ax.Logger
+	//logger = &ax.NullLogger{}
+	logger = &ax.StdoutLogger{}
+	logger = ax.Wrap(logger, ax.NewTimestampLogger(), ax.NewLockedLogger())
+	c := mc.NewClient(conn, 20, logger)
 	c.LogTraffic = true
 	err = c.ConnectUnencrypted(host, port, "MCBot")
 	//err = c.Connect("localhost", 1337, "MCBot")
@@ -32,6 +38,7 @@ func main() {
 	go c.ProcessOutbox()
 
 	go func() {
+		sim := simulator.NewSimulator(logger)
 		var position *protocol.PlayerPositionLookForClient
 		c.Outbox <- &protocol.ClientStatus{}
 
@@ -49,6 +56,7 @@ func main() {
 					c.Exit <- true
 					return
 				}
+				sim.ProcessMessage(pck)
 			case <-timeout:
 				if position != nil {
 					c.Outbox <- position.PacketForServer()

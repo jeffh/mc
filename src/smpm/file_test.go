@@ -70,7 +70,7 @@ func fixtureAsReader(filename string) io.Reader {
 }
 
 func TestReadingWithNoReaderIsAnError(t *testing.T) {
-	smpm := NewFile(nil, sampleChunkColumnMetadata)
+	smpm := NewFile(nil, sampleChunkColumnMetadata, nil)
 	_, err := smpm.Parse()
 	Expect(t, err.Error(), ToEqual, "No Reader specified")
 }
@@ -92,7 +92,7 @@ func TestReadingBulkChunk(t *testing.T) {
 	reader, err := zlib.NewReader(r)
 	Expect(t, err, ToBeNil)
 
-	smpm := NewFile(reader, sampleChunkColumnMetadata)
+	smpm := NewFile(reader, sampleChunkColumnMetadata, nil)
 	columns, err := smpm.Parse()
 	Expect(t, err, ToBeNil)
 

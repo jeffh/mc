@@ -2,6 +2,7 @@
 package smpm
 
 import (
+	"ax"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -10,13 +11,15 @@ import (
 type File struct {
 	reader    io.Reader
 	metadata  Metadata
+	Logger    ax.Logger
 	ByteOrder binary.ByteOrder
 }
 
-func NewFile(reader io.Reader, metadata Metadata) *File {
+func NewFile(reader io.Reader, metadata Metadata, logger ax.Logger) *File {
 	return &File{
 		reader:    reader,
 		metadata:  metadata,
+		Logger:    ax.Wrap(ax.Use(logger), ax.NewPrefixLogger("[smpm] ")),
 		ByteOrder: binary.BigEndian,
 	}
 }
@@ -41,16 +44,19 @@ func (f *File) Parse() (columns []ChunkColumn, err error) {
 				}
 			}
 		}
+		f.Logger.Printf("Blocks Read: %d", blocksToRead)
 		return nil
 	}
 
 	total := f.metadata.ChunkColumnCount()
 	for i := int16(0); i < total; i++ {
+		f.Logger.Printf("Chunk #%d", i+1)
 		metadata := f.metadata.NextMetadata()
 		column := ChunkColumn{
 			Chunks:   NewChunkSlice(ChunksPerColumn),
 			Metadata: &metadata,
 		}
+		fmt.Printf(" -> Types")
 		chunks := column.Chunks
 		err = eachChunkRead(chunks, metadata.PrimaryBitmap, func(c *Chunk) []byte {
 			return c.Types
@@ -58,12 +64,14 @@ func (f *File) Parse() (columns []ChunkColumn, err error) {
 		if err != nil {
 			return
 		}
+		f.Logger.Printf(" -> Metadata")
 		err = eachChunkRead(chunks, metadata.PrimaryBitmap, func(c *Chunk) []byte {
 			return c.Metadata
 		})
 		if err != nil {
 			return
 		}
+		f.Logger.Printf(" -> Light")
 		err = eachChunkRead(chunks, metadata.PrimaryBitmap, func(c *Chunk) []byte {
 			return c.Light
 		})
@@ -71,6 +79,7 @@ func (f *File) Parse() (columns []ChunkColumn, err error) {
 			return
 		}
 		if f.metadata.HasSkylightData() {
+			f.Logger.Printf(" -> SkylightData")
 			err = eachChunkRead(chunks, metadata.PrimaryBitmap, func(c *Chunk) []byte {
 				return c.Skylight
 			})
@@ -78,6 +87,7 @@ func (f *File) Parse() (columns []ChunkColumn, err error) {
 				return
 			}
 		}
+		f.Logger.Printf(" -> Add")
 		err = eachChunkRead(chunks, metadata.AddBitmap, func(c *Chunk) []byte {
 			return c.Add
 		})
@@ -85,12 +95,12 @@ func (f *File) Parse() (columns []ChunkColumn, err error) {
 			return
 		}
 		if f.metadata.IsGroundUpContinuous() {
+			f.Logger.Printf(" -> Biome")
 			err = f.readBytes(column.Biome[:])
 			if err != nil {
 				return
 			}
 		}
-		//columns[i] = column
 		columns = append(columns, column)
 	}
 	return

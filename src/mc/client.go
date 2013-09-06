@@ -1,7 +1,7 @@
 package mc
 
 import (
-	"fmt"
+	"ax"
 	"io"
 	"mc/protocol"
 	//"unicode/utf16"
@@ -12,23 +12,20 @@ type Client struct {
 	Connection    *protocol.Connection
 	Outbox        chan interface{}
 	Inbox         chan interface{}
-	Logger        Logger
+	Logger        ax.Logger
 	Exit          chan bool
 	LogTraffic    bool
 	AutoKeepAlive bool
 }
 
-func NewClient(stream io.ReadWriteCloser, msgBuffer int, l Logger) *Client {
-	if l == nil {
-		l = &protocol.NullLogger{}
-	}
+func NewClient(stream io.ReadWriteCloser, msgBuffer int, l ax.Logger) *Client {
 	reader := protocol.NewReader(stream, protocol.ClientPacketMapper, nil, l)
 	writer := protocol.NewWriter(stream, protocol.ClientPacketMapper, nil, l)
 	return &Client{
 		Connection:    protocol.NewConnection(reader, writer),
 		Outbox:        make(chan interface{}, msgBuffer),
 		Inbox:         make(chan interface{}, msgBuffer),
-		Logger:        l,
+		Logger:        ax.Wrap(ax.Use(l), ax.NewPrefixLogger("[client] ")),
 		Exit:          make(chan bool),
 		AutoKeepAlive: true,
 	}
@@ -54,9 +51,9 @@ func (c *Client) performConnect(hostname string, port int32, username string, us
 	}
 	if c.LogTraffic {
 		if useEncryption {
-			c.log("[mc/Client] Logging in with encryption %v", handshake)
+			c.Logger.Printf("[mc/Client] Logging in with encryption %v", handshake)
 		} else {
-			c.log("[mc/Client] Logging in with NO encryption %v", handshake)
+			c.Logger.Printf("[mc/Client] Logging in with NO encryption %v", handshake)
 		}
 	}
 
@@ -68,14 +65,14 @@ func (c *Client) performConnect(hostname string, port int32, username string, us
 
 		err = protocol.EstablishEncryptedConnection(c.Connection, handshake, secret)
 		if err != nil {
-			c.log("Failed to connect: %s", err)
+			c.Logger.Printf("Failed to connect: %s", err)
 			return err
 		}
 		protocol.EncryptConnection(c.Connection)
 	} else {
 		err = protocol.EstablishPlaintextConnection(c.Connection, handshake)
 		if err != nil {
-			c.log("Failed to connect: %s", err)
+			c.Logger.Printf("Failed to connect: %s", err)
 			return err
 		}
 	}
@@ -98,7 +95,7 @@ func (c *Client) ProcessInbox() {
 		if err == nil {
 			c.Inbox <- p
 		} else {
-			c.log("Failed to read packet: %s", err)
+			c.Logger.Printf("Failed to read packet: %s", err)
 			panic(err)
 			if err == io.EOF {
 				c.Exit <- true
@@ -112,24 +109,19 @@ func (c *Client) ProcessOutbox() {
 	for {
 		p, ok := <-c.Outbox
 		if !ok {
-			c.log("Outbox closed")
+			c.Logger.Printf("Outbox closed")
 			c.Exit <- true
 			return
 		}
 		err := c.WritePacket(p)
 		if err != nil {
-			c.log("Failed to write struct (%#v): %s", p, err)
+			c.Logger.Printf("Failed to write struct (%#v): %s", p, err)
 			if err == io.EOF {
 				c.Exit <- true
 				return
 			}
 		}
 	}
-}
-
-func (c *Client) log(format string, v ...interface{}) {
-	s := fmt.Sprintf(format, v...)
-	c.Logger.Printf("[Client] %s\n", s)
 }
 
 func (c *Client) WritePacket(v interface{}) error {

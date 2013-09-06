@@ -1,6 +1,7 @@
 package protocol
 
 import (
+	"ax"
 	"encoding/binary"
 	"fmt"
 	"io"
@@ -19,7 +20,7 @@ type Reader struct {
 	stream  io.Reader
 	readers DataReaders
 	mapper  NewPacketStructer
-	Logger  Logger
+	Logger  ax.Logger
 }
 
 // Creates a new Reader for the given io.Reader.
@@ -32,21 +33,18 @@ type Reader struct {
 //
 // The last two arguments are optional, passing nil will use their default values:
 // DefaultDataReaders and NullLogger.
-func NewReader(stream io.Reader, m NewPacketStructer, r DataReaders, l Logger) *Reader {
+func NewReader(stream io.Reader, m NewPacketStructer, r DataReaders, l ax.Logger) *Reader {
 	if r == nil {
 		r = DefaultDataReaders
 	}
 	if m == nil {
 		panic(fmt.Errorf("I got a null NewPacketStructer: %#v", m))
 	}
-	if l == nil {
-		l = &NullLogger{}
-	}
 	return &Reader{
 		stream:  stream,
 		readers: r,
 		mapper:  m,
-		Logger:  l,
+		Logger:  ax.Wrap(ax.Use(l), ax.NewPrefixLogger("[protocol] ")),
 	}
 }
 
@@ -58,7 +56,7 @@ func NewReader(stream io.Reader, m NewPacketStructer, r DataReaders, l Logger) *
 func (r *Reader) UpgradeReader(f ReaderFactory) {
 	old := r.stream
 	r.stream = f(r.stream)
-	r.Logger.Printf("Upgrading reader: %#v -> %#v\n", old, r.stream)
+	r.Logger.Printf("Upgrading reader: %#v -> %#v", old, r.stream)
 }
 
 // Reads a given fixed-size go type and reads it in BigEndian form straight
@@ -158,11 +156,11 @@ func (r *Reader) ReadPacket() (interface{}, error) {
 		return nil, err
 	}
 	value, err := r.mapper.NewPacketStruct(pt)
-	r.Logger.Printf("S->C 0x%x\n", pt)
 	if err != nil {
+		r.Logger.Printf("S->C 0x%x (Unknown)", pt)
 		return nil, err
 	}
 	err = r.ReadDispatch(value)
-	r.Logger.Printf("      >> %#v\n", value)
+	r.Logger.Printf("S->C 0x%x %#v", pt, value)
 	return value, err
 }

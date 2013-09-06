@@ -597,8 +597,8 @@ type BlockPosition struct {
 
 type ChunkBulkMetadata struct {
 	ChunkX, ChunkY int32
-	PrimaryBitmap  int16
-	AddBitmap      int16 // unused?
+	PrimaryBitmap  uint16
+	AddBitmap      uint16 // unused?
 }
 
 // represents an item
