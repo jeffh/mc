@@ -56,7 +56,7 @@ func (f *File) Parse() (columns []ChunkColumn, err error) {
 			Chunks:   NewChunkSlice(ChunksPerColumn),
 			Metadata: &metadata,
 		}
-		fmt.Printf(" -> Types")
+		f.Logger.Printf(" -> Types")
 		chunks := column.Chunks
 		err = eachChunkRead(chunks, metadata.PrimaryBitmap, func(c *Chunk) []byte {
 			return c.Types

@@ -41,38 +41,32 @@ func (l *LockedLogger) Printf(format string, v ...interface{}) {
 	l.Logger.Printf(format, v...)
 }
 
+// A Logger that applies a function Map to its incoming message
+// before sending to its wrapped logger
+type MapLogger struct {
+	BasicWrappedLogger
+	Map func(format string, v ...interface{}) string
+}
+
+func NewMapLogger(m func(format string, v ...interface{}) string) *MapLogger {
+	return &MapLogger{Map: m}
+}
+
+func (l *MapLogger) Printf(format string, v ...interface{}) {
+	l.Logger.Printf("%s", l.Map(format, v...))
+}
+
 // A Logger that prefixes the log messages it has been given
 // with a given string.
-type PrefixLogger struct {
-	BasicWrappedLogger
-	Prefix string
+func NewPrefixLogger(prefix string) *MapLogger {
+	return NewMapLogger(func(format string, v ...interface{}) string {
+		return prefix + fmt.Sprintf(format, v...)
+	})
 }
 
-func NewPrefixLogger(prefix string) *PrefixLogger {
-	return &PrefixLogger{Prefix: prefix}
-}
-
-func (l *PrefixLogger) Printf(format string, v ...interface{}) {
-	output := fmt.Sprintf(format, v...)
-	l.Logger.Printf("%s%s", l.Prefix, output)
-}
-
-// A WrapLogger that logs messages with the current time prefixed
-// in front of it
-type TimestampLogger struct {
-	BasicWrappedLogger
-	Now func() string
-}
-
-func NowAsString() string {
-	return time.Now().Format(time.RFC3339) + " "
-}
-
-func NewTimestampLogger() *TimestampLogger {
-	return &TimestampLogger{Now: NowAsString}
-}
-
-func (l *TimestampLogger) Printf(format string, v ...interface{}) {
-	output := fmt.Sprintf(format, v...)
-	l.Logger.Printf("%s%s", NowAsString(), output)
+// A Logger that prefixes the current time to the log message
+func NewTimestampLogger() *MapLogger {
+	return NewMapLogger(func(format string, v ...interface{}) string {
+		return time.Now().Format(time.RFC3339) + " " + fmt.Sprintf(format, v...)
+	})
 }
