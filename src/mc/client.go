@@ -31,17 +31,6 @@ func NewClient(stream io.ReadWriteCloser, msgBuffer int, l ax.Logger) *Client {
 	}
 }
 
-//func (c *Client) readDump() {
-//	for {
-//		var b byte
-//		err := c.Connection.ReadValue(&b)
-//		fmt.Printf("-> 0x%x\n", b)
-//		if err != nil {
-//			panic(fmt.Errorf("Error: %s\n", err))
-//		}
-//	}
-//}
-
 func (c *Client) performConnect(hostname string, port int32, username string, useEncryption bool) (err error) {
 	handshake := &protocol.Handshake{
 		Version:  protocol.Version,
@@ -60,20 +49,20 @@ func (c *Client) performConnect(hostname string, port int32, username string, us
 	if useEncryption {
 		secret, err := protocol.GenerateSecretKey()
 		if err != nil {
-			return err
+			return ax.WrapError(err)
 		}
 
 		err = protocol.EstablishEncryptedConnection(c.Connection, handshake, secret)
 		if err != nil {
 			c.Logger.Printf("Failed to connect: %s", err)
-			return err
+			return ax.WrapError(err)
 		}
 		protocol.EncryptConnection(c.Connection)
 	} else {
 		err = protocol.EstablishPlaintextConnection(c.Connection, handshake)
 		if err != nil {
 			c.Logger.Printf("Failed to connect: %s", err)
-			return err
+			return ax.WrapError(err)
 		}
 	}
 
@@ -95,7 +84,7 @@ func (c *Client) ProcessInbox() {
 		if err == nil {
 			c.Inbox <- p
 		} else {
-			c.Logger.Printf("Failed to read packet: %s", err)
+			c.Logger.Printf("Failed to read packet: %s", ax.WrapError(err))
 			panic(err)
 			if err == io.EOF {
 				c.Exit <- true

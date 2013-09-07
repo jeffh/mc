@@ -30,8 +30,8 @@ func main() {
 	logger = ax.Wrap(logger, ax.NewTimestampLogger(), ax.NewLockedLogger())
 	c := mc.NewClient(conn, 20, logger)
 	c.LogTraffic = true
-	err = c.ConnectUnencrypted(host, port, "MCBot")
-	//err = c.Connect("localhost", 1337, "MCBot")
+	//err = c.ConnectUnencrypted(host, port, "MCBot")
+	err = c.ConnectEncrypted("localhost", 1337, "MCBot")
 	panicIfError(err)
 
 	go c.ProcessInbox()

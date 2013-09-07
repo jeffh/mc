@@ -1,10 +1,11 @@
 package protocol
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
+	//"crypto/aes"
+	//"crypto/cipher"
 	"crypto/rand"
 	"io"
+	"mc/protocol/cfb8"
 )
 
 // Securely generates a random series of bytes of the given size.
@@ -27,7 +28,21 @@ func EncryptConnection(c *Connection) {
 }
 
 ////////////////////////////////////////////////////////////
+// golang doesn't support CFB8 from the stdlib
 
+func aesCfbReader(key, iv []byte) ReaderFactory {
+	return func(r io.Reader) io.Reader {
+		return cfb8.NewReader(r, key)
+	}
+}
+
+func aesCfbWriter(key, iv []byte) WriterFactory {
+	return func(w io.Writer) io.Writer {
+		return cfb8.NewWriter(w, key)
+	}
+}
+
+/*
 func aesCfbReader(key, iv []byte) ReaderFactory {
 	return func(r io.Reader) io.Reader {
 		block, err := aes.NewCipher(key)
@@ -55,3 +70,4 @@ func aesCfbWriter(key, iv []byte) WriterFactory {
 		}
 	}
 }
+*/
