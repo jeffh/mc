@@ -305,8 +305,8 @@ func TestProtocolEntityProperties(t *testing.T) {
 		int32(1),                        // entity id
 		int32(2),                        // 2 properties
 		"hello", float64(3.4), int16(2), // key, value, attr count
-		int64(3), float64(5.0), byte(4),
-		int64(4), float64(6.0), byte(5),
+		int64(3), int64(2), float64(5.0), byte(4),
+		int64(4), int64(5), float64(6.0), byte(5),
 		"world", float64(5.4), int16(0), // key, value, attr count
 	)
 	Expect(t, err, ToBeNil)
@@ -321,12 +321,12 @@ func TestProtocolEntityProperties(t *testing.T) {
 			Value: float64(3.4),
 			Attributes: []EntityAttribute{
 				{
-					UUID:      int64(3),
+					UUID:      [16]byte{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x3, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x2},
 					Amount:    float64(5.0),
 					Operation: byte(4),
 				},
 				{
-					UUID:      int64(4),
+					UUID:      [16]byte{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x4, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x5},
 					Amount:    float64(6.0),
 					Operation: byte(5),
 				},

@@ -365,7 +365,7 @@ func ProtocolReadEntityProperties(r *Reader) (v interface{}, err error) {
 		return
 	}
 
-	e.Properties = make([]EntityProperty, 0)
+	e.Properties = make([]EntityProperty, count)
 
 	for i := int32(0); i < count; i++ {
 		var property EntityProperty
@@ -391,7 +391,7 @@ func ProtocolReadEntityProperties(r *Reader) (v interface{}, err error) {
 			return
 		}
 
-		e.Properties = append(e.Properties, property)
+		e.Properties[i] = property
 	}
 	return
 }

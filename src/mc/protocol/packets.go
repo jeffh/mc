@@ -991,7 +991,7 @@ type EntityProperty struct {
 }
 
 type EntityAttribute struct {
-	UUID      int64
+	UUID      [16]byte
 	Amount    float64
 	Operation byte
 }
