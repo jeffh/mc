@@ -1,4 +1,4 @@
-PACKAGES=mc mc/protocol mc/simulator nbt smpm
+PACKAGES=mc mc/protocol mc/simulator nbt smpm httphelpers github.com/jeffh/goexpect
 FMT_PACKAGES=$(PACKAGES)
 OUTFILE=mc
 MAINFILE=src/main.go
@@ -20,4 +20,4 @@ build:
 clean:
 	$(VARS) go clean
 	rm -rf pkg
-	rm -f mct
+	rm -f $(OUTFILE)

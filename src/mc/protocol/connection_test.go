@@ -119,7 +119,100 @@ func TestConnectionIsEncryptedWhenSecretExists(t *testing.T) {
 }
 
 ////////////////////////////////////////////////////////////////////////////
-func TestCanNegociateEncryptedConnection(t *testing.T) {
+
+func TestCanNegotiatePlaintextConnection(t *testing.T) {
+	c, rbuf, wbuf := createConnection()
+	_, pub, err := createPPK()
+	Expect(t, err, ToBeNil)
+	verifyToken := []byte{1, 2, 3, 4}
+
+	// server gets handshake, sends EKRequest
+	Expect(t, rbuf, ToWritePacket, &EncryptionKeyRequest{
+		ServerID:    "-", // no user verification server ?
+		PublicKey:   pub,
+		VerifyToken: verifyToken,
+	})
+	// server gets EKResponse, returns empty EKResponse
+	Expect(t, rbuf, ToWritePacket, &EncryptionKeyResponse{
+		SharedSecret: []byte{},
+		VerifyToken:  []byte{},
+	})
+	// server promotes to encrypted socket
+
+	handshake := &Handshake{
+		Version:  47,
+		Username: "Joe Smoe",
+		Hostname: "localhost",
+		Port:     25565,
+	}
+	err = EstablishPlaintextConnection(c, handshake)
+
+	Expect(t, err, ToBeNil)
+
+	// client should send handshake
+	Expect(t, wbuf, ToReadPacket, handshake)
+}
+
+////////////////////////////////////////////////////////////////////////////
+
+func TestCanNegotiateEncryptedConnection(t *testing.T) {
+	c, rbuf, wbuf := createConnection()
+	priv, pub, err := createPPK()
+	Expect(t, err, ToBeNil)
+	verifyToken := []byte{1, 2, 3, 4}
+
+	// server gets handshake, sends EKRequest
+	Expect(t, rbuf, ToWritePacket, &EncryptionKeyRequest{
+		ServerID:    "-", // no user verification server ?
+		PublicKey:   pub,
+		VerifyToken: verifyToken,
+	})
+	// server gets EKResponse, returns empty EKResponse
+	Expect(t, rbuf, ToWritePacket, &EncryptionKeyResponse{
+		SharedSecret: []byte{},
+		VerifyToken:  []byte{},
+	})
+	// server promotes to encrypted socket
+
+	handshake := &Handshake{
+		Version:  47,
+		Username: "Joe Smoe",
+		Hostname: "localhost",
+		Port:     25565,
+	}
+	secret := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
+	err = EstablishEncryptedConnection(c, handshake, secret)
+
+	Expect(t, err, ToBeNil)
+
+	// client should send handshake
+	Expect(t, wbuf, ToReadPacket, handshake)
+	// client should send EKResponse
+	p, err := wbuf.ReadPacket()
+	Expect(t, err, ToBeNil)
+	ekRes, ok := p.(*EncryptionKeyResponse)
+	Expect(t, ok, ToBeTrue)
+
+	// we need to decrypt the fields
+	dVerifyToken, err := rsa.DecryptPKCS1v15(rand.Reader, priv, ekRes.VerifyToken)
+	Expect(t, err, ToBeNil)
+	Expect(t, dVerifyToken, ToEqual, verifyToken)
+	dSecret, err := rsa.DecryptPKCS1v15(rand.Reader, priv, ekRes.SharedSecret)
+	Expect(t, err, ToBeNil)
+	Expect(t, dSecret, ToEqual, secret)
+
+	// shouldn't have any extra data
+	Expect(t, rbuf.IsEmpty(), ToBeTrue)
+	Expect(t, wbuf.IsEmpty(), ToBeTrue)
+	// connection should be modified
+	Expect(t, c.IsEncrypted(), ToBeTrue)
+	Expect(t, c.ServerID, ToBe, "-")
+	Expect(t, c.Encryption.SharedKey, ToEqual, secret)
+}
+
+////////////////////////////////////////////////////////////////////////////
+
+func TestCanNegotiateEncryptedSessionConnection(t *testing.T) {
 	c, rbuf, wbuf := createConnection()
 	priv, pub, err := createPPK()
 	Expect(t, err, ToBeNil)

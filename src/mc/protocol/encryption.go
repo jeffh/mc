@@ -1,8 +1,6 @@
 package protocol
 
 import (
-	//"crypto/aes"
-	//"crypto/cipher"
 	"crypto/rand"
 	"io"
 	"mc/protocol/cfb8"

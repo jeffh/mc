@@ -13,8 +13,6 @@
 // NOT automatically handle higher-level connection or parsing concerns such as:
 //
 //    - Regularly sending keep alives
-//    - Promoting connections to be fully encrypted
-//    - minecraft server session authentication (http://www.wiki.vg/Session)
 //    - Parsing NBT or Chunk data
 //
 // The majority of types in this package deal with the various minecraft
@@ -29,6 +27,19 @@ import (
 	"fmt"
 	"io"
 )
+
+// Handles the handshake to a minecraft server. Secret is the shared key
+// used by both parties for encryption.
+//
+// Also registers with session.minecraft.net to allow signing in to
+// minecraft servers in online-mode.
+//
+// The encryption upgrading the socket stream is done immediately after the
+// connection has been established without errors.
+func EstablishEncryptedSessionConnection(c *Connection, h *Handshake, secret []byte) (err error) {
+	// TODO: actually implement me
+	return nil
+}
 
 // Handles the handshake to a minecraft server. Uses a plaintext connection.
 func EstablishPlaintextConnection(c *Connection, h *Handshake) (err error) {
@@ -52,10 +63,8 @@ func EstablishPlaintextConnection(c *Connection, h *Handshake) (err error) {
 // Handles the handshake to a minecraft server. Secret is the shared key
 // used by both parties for encryption.
 //
-// The encryption upgrading of the socket stream has to be done
+// The encryption upgrading of the socket stream is done
 // immediately after the connection has been established without errors.
-//
-// Currently broken. Use EstablishPlaintextConnection for now.
 func EstablishEncryptedConnection(c *Connection, h *Handshake, secret []byte) (err error) {
 	if len(secret) != 16 {
 		panic("Secret must be 16-bytes")
@@ -120,6 +129,13 @@ func EstablishEncryptedConnection(c *Connection, h *Handshake, secret []byte) (e
 	// encrypt connection
 	c.ServerID = ekReq.ServerID
 	c.Encryption.SharedKey = secret
+
+	if err != nil {
+		return
+	}
+
+	// promote the connection to be encrypted.
+	EncryptConnection(c)
 
 	return
 }
