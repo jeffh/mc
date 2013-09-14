@@ -56,8 +56,13 @@ func (s *YggdrasilSession) post(path string, data interface{}) (*http.Response, 
 }
 
 func (s *YggdrasilSession) Authenticate(username, password string) error {
-	s.post("/authenticate", struct{}{})
-	return nil
+	data := &yggdrasilAuthenticateRequest{
+		Agent:    *YggdrasilDefaultAgent,
+		Username: username,
+		Password: password,
+	}
+	_, err := s.post("/authenticate", data)
+	return err
 }
 
 func (s *YggdrasilSession) Refresh(accessToken, clientToken string) error {
@@ -73,6 +78,11 @@ type YggdrasilAgent struct {
 	Version int    `json:"version"`
 }
 
+var YggdrasilDefaultAgent = &YggdrasilAgent{
+	Name:    YggdrasilClient,
+	Version: YggdrasilVersion,
+}
+
 type YggdrasilProfile struct {
 	Id   string `json:"id"`
 	Name string `json:"name"`
@@ -82,7 +92,7 @@ type yggdrasilAuthenticateRequest struct {
 	Agent       YggdrasilAgent `json:"agent"`
 	Username    string         `json:"username"`
 	Password    string         `json:"password"`
-	ClientToken string         `json:"clientToken"`
+	ClientToken string         `json:"clientToken,omitempty"`
 }
 
 type yggdrasilAuthenticateResponse struct {

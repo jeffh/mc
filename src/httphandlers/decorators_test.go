@@ -21,10 +21,14 @@ func TestRequestRecorderCanRecordIncomingRequestsWithoutAHandler(t *testing.T) {
 	r1, _ := doRequest(it, h, "GET", "http://localhost/")
 	r2, _ := doRequest(it, h, "POST", "http://localhost/path1")
 
-	it.Expects(h.Requests, ToEqual, []http.Request{*r1, *r2})
+	it.Expects(h.Requests, ToBeLengthOf, 2)
+	it.Expects(h.Requests[0].URL.String(), ToEqual, r1.URL.String())
+	it.Expects(h.Requests[1].URL.String(), ToEqual, r2.URL.String())
 
-	it.Expects(h.RequestsByPath("/"), ToEqual, []http.Request{*r1})
-	it.Expects(h.RequestsByMethod("POST"), ToEqual, []http.Request{*r2})
+	it.Expects(h.RequestsByPath("/"), ToBeLengthOf, 1)
+	it.Expects(h.RequestsByPath("/")[0].URL.String(), ToEqual, r1.URL.String())
+	it.Expects(h.RequestsByMethod("POST"), ToBeLengthOf, 1)
+	it.Expects(h.RequestsByMethod("POST")[0].URL.String(), ToEqual, r2.URL.String())
 }
 
 func TestRequestRecorderCanClearRecordedRequests(t *testing.T) {
@@ -49,5 +53,6 @@ func TestRequestRecorderCanRecordIncomingRequestsBy(t *testing.T) {
 	h.ServeHTTP(resp, r)
 	it.Expects(resp.Body.String(), ToEqual, "ok")
 
-	it.Expects(h.Requests, ToEqual, []http.Request{*r})
+	it.Expects(h.Requests, ToBeLengthOf, 1)
+	it.Expects(h.Requests[0].URL.String(), ToEqual, r.URL.String())
 }

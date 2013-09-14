@@ -17,8 +17,9 @@ func TestURLHandlerMapsToHandlers(t *testing.T) {
 	h := NewURLHandler(map[string]http.Handler{
 		"GET /":   h1,
 		"GET /h2": h2,
-		"ANY /h3": h3,
 	}).WithErrorHandler(h4)
+
+	h.Any("/h3", h3)
 
 	r, err := http.NewRequest("GET", "http://localhost/", nil)
 	r.RequestURI = "/"
