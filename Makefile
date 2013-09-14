@@ -1,4 +1,4 @@
-PACKAGES=mc mc/protocol mc/simulator nbt smpm httphelpers github.com/jeffh/goexpect
+PACKAGES=mc mc/protocol/session mc/protocol mc/simulator nbt smpm httphandlers github.com/jeffh/goexpect
 FMT_PACKAGES=$(PACKAGES)
 OUTFILE=mc
 MAINFILE=src/main.go

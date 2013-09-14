@@ -12,7 +12,7 @@ import (
 
 func panicIfError(err error) {
 	if err != nil {
-		panic(fmt.Errorf("[Client] Error: %s\n", err))
+		panic(err)
 	}
 }
 

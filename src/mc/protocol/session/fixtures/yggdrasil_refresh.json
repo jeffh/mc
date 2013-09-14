@@ -1,0 +1,8 @@
+{
+  "accessToken": "deadbeef",
+  "clientToken": "clientID",
+  "selectedProfile": {
+    "id": "badfeed",
+    "name": "john"
+  }
+}
