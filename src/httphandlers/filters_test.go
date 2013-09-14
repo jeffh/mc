@@ -46,7 +46,7 @@ func TestRequiredHeadersHandlerCallsGoodHandlerWithTheRequiredHeaders(t *testing
 	okHandler := NewFixtureFromString("ok")
 	failHandler := NewFixtureFromString("fail")
 	h := NewRequiredHeadersHandler(http.Header{
-		"X-Token": nil,
+		"x-token": nil, // header keys should be case-insensitive
 	}, okHandler).WithFailedHandler(failHandler)
 
 	r, err := http.NewRequest("GET", "/", nil)

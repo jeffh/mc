@@ -27,8 +27,17 @@ func (d *RequiredHeadersHandler) WithFailedHandler(h http.Handler) *RequiredHead
 	return d
 }
 
+func canonicalizeHeaders(h http.Header) http.Header {
+	newHeaders := make(http.Header, 0)
+	for key, value := range h {
+		newHeaders[http.CanonicalHeaderKey(key)] = value
+	}
+	return newHeaders
+}
+
 func (d *RequiredHeadersHandler) hasRequiredHeaders(h http.Header) bool {
-	for key, values := range d.RequiredHeaders {
+	h = canonicalizeHeaders(h)
+	for key, values := range canonicalizeHeaders(d.RequiredHeaders) {
 		actualValues, ok := h[key]
 		if !ok {
 			return false

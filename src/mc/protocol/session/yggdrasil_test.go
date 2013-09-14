@@ -20,10 +20,10 @@ func fixture(path string) *httphandlers.FixtureHandler {
 	return handler.(*httphandlers.FixtureHandler)
 }
 
-func fakeSession() (*httptest.Server, *YggdrasilSession, *httphandlers.RequestRecorderHandler) {
+func fakeSession() (*httptest.Server, *YggdrasilClient, *httphandlers.RequestRecorderHandler) {
 	authHandler := fixture("fixtures/yggdrasil_authenticate.json")
 	refreshHandler := fixture("fixtures/yggdrasil_refresh.json")
-	validateHandler := fixture("fixtures/yggdrasil_validate.json")
+	validateHandler := httphandlers.NewFixtureFromString("")
 	routes := httphandlers.NewURLHandler(map[string]http.Handler{
 		"POST /authenticate": requireJson(authHandler),
 		"POST /refresh":      requireJson(refreshHandler),
@@ -31,7 +31,7 @@ func fakeSession() (*httptest.Server, *YggdrasilSession, *httphandlers.RequestRe
 	})
 	h := httphandlers.NewRequestRecorderHandler(routes)
 	server := httptest.NewServer(h)
-	session := NewYggdrasilSession()
+	session := NewYggdrasilClient()
 	session.URL = server.URL
 	return server, session, h
 }
@@ -40,39 +40,86 @@ func TestSessionServerAuthenticate(t *testing.T) {
 	it := NewIt(t)
 	server, session, recorder := fakeSession()
 	defer server.Close()
-	Must(t, session.Authenticate("username", "password"))
+	token, err := session.Authenticate("username", "password")
+	it.Must(err)
 
-	it.Expects(recorder.RequestsByPath("/authenticate"), Not(ToBeEmpty))
-	r := recorder.RequestsByPath("/authenticate")[0]
+	it.Expects(token, ToEqual, &YggdrasilSession{
+		AccessToken: "deadbeef",
+		ClientToken: "clientID",
+	})
+
+	requests := recorder.RequestsByPath("/authenticate")
+	it.Expects(requests, Not(ToBeEmpty))
+	r := requests[0]
 	it.Expects(r.Method, ToEqual, "POST")
 
 	auth := &authRequest{}
 	it.Must(json.Unmarshal(r.Body, auth))
 	it.Expects(auth.Username, ToEqual, "username")
 	it.Expects(auth.Password, ToEqual, "password")
+	it.Expects(auth.ClientToken, ToEqual, "")
 	it.Expects(auth.Agent.Name, Not(ToEqual), "")
 	it.Expects(auth.Agent.Version, Not(ToEqual), 0)
 }
 
 type authRequest struct {
-	Username string `json:"username"`
-	Password string `json:"password"`
-	Agent    struct {
+	Username    string `json:"username"`
+	Password    string `json:"password"`
+	ClientToken string `json:"clientToken,omitempty"`
+	Agent       struct {
 		Name    string `json:"name"`
 		Version int    `json:"version"`
 	} `json:"agent"`
 }
 
-/*
-{
-  "agent": {                             // optional
-    "name": "Minecraft",                 // So far this is the only encountered value
-    "version": 1                         // This number might be increased
-                                         // by the vanilla client in the future
-  },
-  "username": "mojang account name",     // Can be an email address or player name for
-                                         // unmigrated accounts
-  "password": "mojang account password",
-  "clientToken": "client identifier"     // optional
+func TestSessionServiceRefresh(t *testing.T) {
+	it := NewIt(t)
+	server, session, recorder := fakeSession()
+	defer server.Close()
+	token := &YggdrasilSession{
+		AccessToken: "accessToken",
+		ClientToken: "clientToken",
+	}
+	it.Must(session.Refresh(token))
+
+	it.Expects(token, ToEqual, &YggdrasilSession{
+		AccessToken: "deadbeef",
+		ClientToken: "clientID",
+	})
+
+	requests := recorder.RequestsByPath("/refresh")
+	it.Expects(requests, Not(ToBeEmpty))
+	r := requests[0]
+	it.Expects(r.Method, ToEqual, "POST")
+
+	auth := &refreshRequest{}
+	it.Must(json.Unmarshal(r.Body, auth))
+	it.Expects(auth.AccessToken, ToEqual, "accessToken")
+	it.Expects(auth.ClientToken, ToEqual, "clientToken")
 }
-*/
+
+type refreshRequest struct {
+	AccessToken string `json:"accessToken"`
+	ClientToken string `json:"clientToken"`
+}
+
+func TestSessionServiceValidate(t *testing.T) {
+	it := NewIt(t)
+	server, session, recorder := fakeSession()
+	defer server.Close()
+	token := &YggdrasilSession{
+		AccessToken: "accessToken",
+		ClientToken: "clientToken",
+	}
+	it.Must(session.Validate(token))
+
+	requests := recorder.RequestsByPath("/validate")
+	it.Expects(requests, Not(ToBeEmpty))
+	r := requests[0]
+	it.Expects(r.Method, ToEqual, "POST")
+
+	auth := &refreshRequest{}
+	it.Must(json.Unmarshal(r.Body, auth))
+	it.Expects(auth.AccessToken, ToEqual, "accessToken")
+	it.Expects(auth.ClientToken, ToEqual, "")
+}

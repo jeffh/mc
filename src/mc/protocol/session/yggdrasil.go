@@ -1,9 +1,11 @@
-// handles session creation to minecraft.net
+// handles session creation to minecraft's login servers
 //
 // sessions are used to verify the authenticity of
-// a minecraft account (aka, DRM). It is used by
-// servers to ban clients, which have be the name
+// a minecraft account (like, DRM). It is used by
+// servers to ban clients by their name that is
 // registered with minecraft.net.
+//
+//
 package session
 
 import (
@@ -15,29 +17,39 @@ import (
 )
 
 const (
-	YggdrasilURL     = "https://authserver.mojang.com"
-	YggdrasilClient  = "Minecraft"
-	YggdrasilVersion = 1
+	YggdrasilURL           = "https://authserver.mojang.com"
+	YggdrasilClientName    = "Minecraft"
+	YggdrasilClientVersion = 1
 )
 
-type YggdrasilSession struct {
+var YggdrasilDefaultAgent = &YggdrasilAgent{
+	Name:    YggdrasilClientName,
+	Version: YggdrasilClientVersion,
+}
+
+type YggdrasilClient struct {
 	URL    string
 	Agent  YggdrasilAgent
 	Client *http.Client
 }
 
-func NewYggdrasilSession() *YggdrasilSession {
-	return &YggdrasilSession{
+type YggdrasilSession struct {
+	AccessToken string
+	ClientToken string
+}
+
+func NewYggdrasilClient() *YggdrasilClient {
+	return &YggdrasilClient{
 		URL: YggdrasilURL,
 		Agent: YggdrasilAgent{
-			Name:    YggdrasilClient,
-			Version: YggdrasilVersion,
+			Name:    YggdrasilClientName,
+			Version: YggdrasilClientVersion,
 		},
 		Client: &http.Client{},
 	}
 }
 
-func (s *YggdrasilSession) fullPath(path string) string {
+func (s *YggdrasilClient) fullPath(path string) string {
 	uri, err := url.Parse(s.URL + path)
 	if err != nil {
 		panic(err)
@@ -45,42 +57,74 @@ func (s *YggdrasilSession) fullPath(path string) string {
 	return uri.String()
 }
 
-func (s *YggdrasilSession) post(path string, data interface{}) (*http.Response, error) {
+func (s *YggdrasilClient) post(path string, data interface{}, respData interface{}) (*http.Response, error) {
 	b := bytes.NewBuffer([]byte{})
 	encoder := json.NewEncoder(b)
 	err := encoder.Encode(data)
 	if err != nil {
 		return nil, err
 	}
-	return s.Client.Post(s.fullPath(path), "application/json", b)
+	resp, err := s.Client.Post(s.fullPath(path), "application/json", b)
+	if err == nil && respData != nil {
+		decoder := json.NewDecoder(resp.Body)
+		err = decoder.Decode(respData)
+	}
+	return resp, err
 }
 
-func (s *YggdrasilSession) Authenticate(username, password string) error {
+func (s *YggdrasilClient) Authenticate(username, password string) (*YggdrasilSession, error) {
 	data := &yggdrasilAuthenticateRequest{
 		Agent:    *YggdrasilDefaultAgent,
 		Username: username,
 		Password: password,
 	}
-	_, err := s.post("/authenticate", data)
+	authResponse := &yggdrasilResponse{}
+	_, err := s.post("/authenticate", data, authResponse)
+	if err != nil {
+		return nil, err
+	}
+
+	token := &YggdrasilSession{
+		AccessToken: authResponse.AccessToken,
+		ClientToken: authResponse.ClientToken,
+	}
+	return token, err
+}
+
+func (s *YggdrasilClient) Refresh(token *YggdrasilSession) error {
+	data := &yggdrasilRefreshRequest{
+		AccessToken: token.AccessToken,
+		ClientToken: token.ClientToken,
+	}
+	authResponse := &yggdrasilResponse{}
+	_, err := s.post("/refresh", data, authResponse)
+	if err != nil {
+		return err
+	}
+
+	token.AccessToken = authResponse.AccessToken
+	token.ClientToken = authResponse.ClientToken
 	return err
 }
 
-func (s *YggdrasilSession) Refresh(accessToken, clientToken string) error {
-	return nil
-}
+func (s *YggdrasilClient) Validate(token *YggdrasilSession) error {
+	data := &yggdrasilRefreshRequest{
+		AccessToken: token.AccessToken,
+	}
+	resp, err := s.post("/validate", data, nil)
+	if err != nil {
+		return nil
+	}
 
-func (s *YggdrasilSession) Validate(accessToken string) bool {
-	return false
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("Auth token has expired")
+	}
+	return nil
 }
 
 type YggdrasilAgent struct {
 	Name    string `json:"name"`
 	Version int    `json:"version"`
-}
-
-var YggdrasilDefaultAgent = &YggdrasilAgent{
-	Name:    YggdrasilClient,
-	Version: YggdrasilVersion,
 }
 
 type YggdrasilProfile struct {
@@ -89,25 +133,32 @@ type YggdrasilProfile struct {
 }
 
 type yggdrasilAuthenticateRequest struct {
-	Agent       YggdrasilAgent `json:"agent"`
+	Agent       YggdrasilAgent `json:"agent",omitempty`
 	Username    string         `json:"username"`
 	Password    string         `json:"password"`
 	ClientToken string         `json:"clientToken,omitempty"`
 }
 
-type yggdrasilAuthenticateResponse struct {
-	AccessToken       string
-	ClientToken       string
-	AvailableProfiles []YggdrasilProfile
-	SelectedProfile   YggdrasilProfile
+type yggdrasilRefreshRequest struct {
+	AccessToken string `json:"accessToken"`
+	ClientToken string `json:"clientToken,omitempty"`
 }
 
-type YggdrasilError struct {
+type yggdrasilResponse struct {
+	AccessToken       string             `json:"accessToken"`
+	ClientToken       string             `json:"clientToken"`
+	AvailableProfiles []YggdrasilProfile `json:"availableProfiles"`
+	SelectedProfile   YggdrasilProfile   `json:"selectedProfile"`
+
 	ErrorCode    string `json:"error"`
 	ErrorMessage string `json:"errorMessage"`
 	Cause        string `json:"cause"`
 }
 
-func (e *YggdrasilError) Error() string {
-	return fmt.Sprintf("%s - %s: %s", e.ErrorCode, e.ErrorMessage, e.Cause)
+func (y *yggdrasilResponse) IsError() bool {
+	return y.ErrorCode != ""
+}
+
+func (y *yggdrasilResponse) Error() string {
+	return fmt.Sprintf("%s - %s: %s", y.ErrorCode, y.ErrorMessage, y.Cause)
 }
