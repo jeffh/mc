@@ -111,7 +111,7 @@ func (s *YggdrasilClient) Refresh(token *YggdrasilSession) error {
 	}
 
 	if authResponse.IsError() {
-		return nil, &YggdrasilError{
+		return &YggdrasilError{
 			ErrorCode:    authResponse.ErrorCode,
 			ErrorMessage: authResponse.ErrorMessage,
 			Cause:        authResponse.Cause,
