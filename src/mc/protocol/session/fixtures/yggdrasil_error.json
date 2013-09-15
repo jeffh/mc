@@ -1,0 +1,5 @@
+{
+  "error": "ForbiddenOperationException",
+  "errorMessage": "Invalid credentials. Account migrated, use e-mail as username.",
+  "cause": "UserMigratedException"
+}

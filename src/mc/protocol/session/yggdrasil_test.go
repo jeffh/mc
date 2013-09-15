@@ -46,6 +46,7 @@ func TestSessionServerAuthenticate(t *testing.T) {
 	it.Expects(token, ToEqual, &YggdrasilSession{
 		AccessToken: "deadbeef",
 		ClientToken: "clientID",
+		ProfileID:   "badfeed",
 	})
 
 	requests := recorder.RequestsByPath("/authenticate")
@@ -60,6 +61,22 @@ func TestSessionServerAuthenticate(t *testing.T) {
 	it.Expects(auth.ClientToken, ToEqual, "")
 	it.Expects(auth.Agent.Name, Not(ToEqual), "")
 	it.Expects(auth.Agent.Version, Not(ToEqual), 0)
+}
+
+func TestSessionServerAuthenticateFailure(t *testing.T) {
+	it := NewIt(t)
+	server := httptest.NewServer(fixture("fixtures/yggdrasil_error.json"))
+	session := NewYggdrasilClient()
+	session.URL = server.URL
+	defer server.Close()
+	token, err := session.Authenticate("username", "password")
+	it.Expects(token, ToBeNil)
+
+	it.Expects(err, ToEqual, &YggdrasilError{
+		ErrorCode:    "ForbiddenOperationException",
+		ErrorMessage: "Invalid credentials. Account migrated, use e-mail as username.",
+		Cause:        "UserMigratedException",
+	})
 }
 
 type authRequest struct {
@@ -79,12 +96,14 @@ func TestSessionServiceRefresh(t *testing.T) {
 	token := &YggdrasilSession{
 		AccessToken: "accessToken",
 		ClientToken: "clientToken",
+		ProfileID:   "badfeed",
 	}
 	it.Must(session.Refresh(token))
 
 	it.Expects(token, ToEqual, &YggdrasilSession{
 		AccessToken: "deadbeef",
 		ClientToken: "clientID",
+		ProfileID:   "badfeed",
 	})
 
 	requests := recorder.RequestsByPath("/refresh")
@@ -96,6 +115,26 @@ func TestSessionServiceRefresh(t *testing.T) {
 	it.Must(json.Unmarshal(r.Body, auth))
 	it.Expects(auth.AccessToken, ToEqual, "accessToken")
 	it.Expects(auth.ClientToken, ToEqual, "clientToken")
+}
+
+func TestSessionServerRefreshFailure(t *testing.T) {
+	it := NewIt(t)
+	server := httptest.NewServer(fixture("fixtures/yggdrasil_error.json"))
+	session := NewYggdrasilClient()
+	session.URL = server.URL
+	defer server.Close()
+	token := &YggdrasilSession{
+		AccessToken: "accessToken",
+		ClientToken: "clientToken",
+		ProfileID:   "badfeed",
+	}
+	err := session.Refresh(token)
+
+	it.Expects(err, ToEqual, &YggdrasilError{
+		ErrorCode:    "ForbiddenOperationException",
+		ErrorMessage: "Invalid credentials. Account migrated, use e-mail as username.",
+		Cause:        "UserMigratedException",
+	})
 }
 
 type refreshRequest struct {
@@ -110,6 +149,7 @@ func TestSessionServiceValidate(t *testing.T) {
 	token := &YggdrasilSession{
 		AccessToken: "accessToken",
 		ClientToken: "clientToken",
+		ProfileID:   "badfeed",
 	}
 	it.Must(session.Validate(token))
 

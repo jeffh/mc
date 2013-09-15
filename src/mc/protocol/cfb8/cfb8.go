@@ -1,6 +1,6 @@
 package cfb8
 
-// Taken from toquetoes:
+// Derived from toquetoes:
 // https://github.com/toqueteos/minero/blob/master/util/crypto/cfb8/cfb8.go
 //
 // Copyright 2010 The Go Authors. All rights reserved.

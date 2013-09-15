@@ -4,8 +4,6 @@
 // a minecraft account (like, DRM). It is used by
 // servers to ban clients by their name that is
 // registered with minecraft.net.
-//
-//
 package session
 
 import (
@@ -36,6 +34,7 @@ type YggdrasilClient struct {
 type YggdrasilSession struct {
 	AccessToken string
 	ClientToken string
+	ProfileID   string
 }
 
 func NewYggdrasilClient() *YggdrasilClient {
@@ -84,9 +83,18 @@ func (s *YggdrasilClient) Authenticate(username, password string) (*YggdrasilSes
 		return nil, err
 	}
 
+	if authResponse.IsError() {
+		return nil, &YggdrasilError{
+			ErrorCode:    authResponse.ErrorCode,
+			ErrorMessage: authResponse.ErrorMessage,
+			Cause:        authResponse.Cause,
+		}
+	}
+
 	token := &YggdrasilSession{
 		AccessToken: authResponse.AccessToken,
 		ClientToken: authResponse.ClientToken,
+		ProfileID:   authResponse.SelectedProfile.Id,
 	}
 	return token, err
 }
@@ -100,6 +108,14 @@ func (s *YggdrasilClient) Refresh(token *YggdrasilSession) error {
 	_, err := s.post("/refresh", data, authResponse)
 	if err != nil {
 		return err
+	}
+
+	if authResponse.IsError() {
+		return nil, &YggdrasilError{
+			ErrorCode:    authResponse.ErrorCode,
+			ErrorMessage: authResponse.ErrorMessage,
+			Cause:        authResponse.Cause,
+		}
 	}
 
 	token.AccessToken = authResponse.AccessToken
@@ -159,6 +175,12 @@ func (y *yggdrasilResponse) IsError() bool {
 	return y.ErrorCode != ""
 }
 
-func (y *yggdrasilResponse) Error() string {
+type YggdrasilError struct {
+	ErrorCode    string
+	ErrorMessage string
+	Cause        string
+}
+
+func (y *YggdrasilError) Error() string {
 	return fmt.Sprintf("%s - %s: %s", y.ErrorCode, y.ErrorMessage, y.Cause)
 }
