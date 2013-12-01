@@ -4,6 +4,7 @@ import (
 	"ax"
 	"io"
 	"mc/protocol"
+	"mc/protocol/session"
 	//"unicode/utf16"
 )
 
@@ -52,7 +53,8 @@ func (c *Client) performConnect(hostname string, port int32, username string, us
 			return ax.WrapError(err)
 		}
 
-		err = protocol.EstablishEncryptedConnection(c.Connection, handshake, secret)
+		sessionClient := session.NewSessionClient()
+		err = protocol.EstablishEncryptedConnection(c.Connection, handshake, secret, sessionClient)
 		if err != nil {
 			c.Logger.Printf("Failed to connect: %s", err)
 			return ax.WrapError(err)

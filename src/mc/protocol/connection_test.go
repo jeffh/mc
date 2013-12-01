@@ -6,6 +6,7 @@ import (
 	"crypto/x509"
 	"fmt"
 	. "github.com/jeffh/goexpect"
+	"mc/protocol/session"
 	"testing"
 )
 
@@ -157,6 +158,7 @@ func TestCanNegotiatePlaintextConnection(t *testing.T) {
 
 func TestCanNegotiateEncryptedConnection(t *testing.T) {
 	c, rbuf, wbuf := createConnection()
+	sessionRecorder := session.NewRecorderClient()
 	priv, pub, err := createPPK()
 	Expect(t, err, ToBeNil)
 	verifyToken := []byte{1, 2, 3, 4}
@@ -181,7 +183,7 @@ func TestCanNegotiateEncryptedConnection(t *testing.T) {
 		Port:     25565,
 	}
 	secret := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
-	err = EstablishEncryptedConnection(c, handshake, secret)
+	err = EstablishEncryptedConnection(c, handshake, secret, sessionRecorder)
 
 	Expect(t, err, ToBeNil)
 
@@ -210,17 +212,16 @@ func TestCanNegotiateEncryptedConnection(t *testing.T) {
 	Expect(t, c.Encryption.SharedKey, ToEqual, secret)
 }
 
-////////////////////////////////////////////////////////////////////////////
-
-func TestCanNegotiateEncryptedSessionConnection(t *testing.T) {
+func TestCanNegotiateEncryptedConnectionWithSession(t *testing.T) {
 	c, rbuf, wbuf := createConnection()
+	sessionRecorder := session.NewRecorderClient()
 	priv, pub, err := createPPK()
 	Expect(t, err, ToBeNil)
 	verifyToken := []byte{1, 2, 3, 4}
 
 	// server gets handshake, sends EKRequest
 	Expect(t, rbuf, ToWritePacket, &EncryptionKeyRequest{
-		ServerID:    "-", // no user verification server ?
+		ServerID:    "hi", // no user verification server ?
 		PublicKey:   pub,
 		VerifyToken: verifyToken,
 	})
@@ -238,7 +239,7 @@ func TestCanNegotiateEncryptedSessionConnection(t *testing.T) {
 		Port:     25565,
 	}
 	secret := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
-	err = EstablishEncryptedConnection(c, handshake, secret)
+	err = EstablishEncryptedConnection(c, handshake, secret, sessionRecorder)
 
 	Expect(t, err, ToBeNil)
 
@@ -263,6 +264,17 @@ func TestCanNegotiateEncryptedSessionConnection(t *testing.T) {
 	Expect(t, wbuf.IsEmpty(), ToBeTrue)
 	// connection should be modified
 	Expect(t, c.IsEncrypted(), ToBeTrue)
-	Expect(t, c.ServerID, ToBe, "-")
+	Expect(t, c.ServerID, ToBe, "hi")
 	Expect(t, c.Encryption.SharedKey, ToEqual, secret)
+
+	// client should send join server request
+	Expect(t, sessionRecorder.JoinRequests, ToBeLengthOf, 1)
+	serverInfo := sessionRecorder.JoinRequests[0]
+	Expect(t, serverInfo, ToEqual, session.ServerInfo{
+		Username:     "Joe Smoe",
+		SessionID:    "Hello",
+		ServerID:     "hi",
+		SharedSecret: secret,
+		PublicKey:    pub,
+	})
 }

@@ -26,20 +26,8 @@ import (
 	"crypto/x509"
 	"fmt"
 	"io"
+	"mc/protocol/session"
 )
-
-// Handles the handshake to a minecraft server. Secret is the shared key
-// used by both parties for encryption.
-//
-// Also registers with session.minecraft.net to allow signing in to
-// minecraft servers in online-mode.
-//
-// The encryption upgrading the socket stream is done immediately after the
-// connection has been established without errors.
-func EstablishEncryptedSessionConnection(c *Connection, h *Handshake, secret []byte) (err error) {
-	// TODO: actually implement me
-	return nil
-}
 
 // Handles the handshake to a minecraft server. Uses a plaintext connection.
 func EstablishPlaintextConnection(c *Connection, h *Handshake) (err error) {
@@ -65,7 +53,7 @@ func EstablishPlaintextConnection(c *Connection, h *Handshake) (err error) {
 //
 // The encryption upgrading of the socket stream is done
 // immediately after the connection has been established without errors.
-func EstablishEncryptedConnection(c *Connection, h *Handshake, secret []byte) (err error) {
+func EstablishEncryptedConnection(c *Connection, h *Handshake, secret []byte, sessionClient session.Client) (err error) {
 	if len(secret) != 16 {
 		panic("Secret must be 16-bytes")
 	}
@@ -99,6 +87,18 @@ func EstablishEncryptedConnection(c *Connection, h *Handshake, secret []byte) (e
 	}
 
 	encToken, err := c.Encryption.encrypt(ekReq.VerifyToken)
+	if err != nil {
+		return
+	}
+
+	// join session
+	err = sessionClient.JoinServer(session.ServerInfo{
+		Username:     h.Username,
+		SessionID:    "Hello",
+		ServerID:     ekReq.ServerID,
+		SharedSecret: secret,
+		PublicKey:    ekReq.PublicKey,
+	})
 	if err != nil {
 		return
 	}

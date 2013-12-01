@@ -37,6 +37,10 @@ type YggdrasilSession struct {
 	ProfileID   string
 }
 
+func (s *YggdrasilSession) SessionID() string {
+	return fmt.Sprintf("token:%s:%s", s.AccessToken, s.ProfileID)
+}
+
 func NewYggdrasilClient() *YggdrasilClient {
 	return &YggdrasilClient{
 		URL: YggdrasilURL,
